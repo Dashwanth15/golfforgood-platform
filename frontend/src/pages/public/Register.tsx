@@ -68,12 +68,14 @@ export default function Register() {
 
 
   return (
-    <div className="min-h-screen grid grid-cols-1 md:grid-cols-2 pt-16">
-      {/* Left — Brand & Hero */}
-      <AuthHero />
+    <div className="h-screen w-full flex overflow-hidden pt-16">
+      {/* Left — Brand & Hero (50% width on desktop) */}
+      <div className="hidden lg:block lg:w-1/2 h-full relative border-r border-border/50 bg-[#062c29]">
+        <AuthHero />
+      </div>
 
-      {/* Right — Form */}
-      <div className="flex items-center justify-center p-8 bg-surface">
+      {/* Right — Form (100% on mobile, 50% on desktop) */}
+      <div className="w-full lg:w-1/2 h-full flex flex-col items-center justify-center p-6 sm:p-12 bg-surface overflow-y-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
           className="w-full max-w-md"
