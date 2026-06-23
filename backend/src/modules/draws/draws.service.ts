@@ -1,5 +1,5 @@
 import { supabase } from '../../config/database';
-import { NotFoundError, ForbiddenError } from '../../shared/errors/AppError';
+import { NotFoundError, ForbiddenError, ConflictError } from '../../shared/errors/AppError';
 import { APP_CONSTANTS } from '../../config/constants';
 
 // ── Fisher-Yates shuffle on pool 1-45, pick 5 ────────────────────
@@ -97,8 +97,10 @@ export class DrawsService {
       .single();
 
     if (error) {
-      if (error.code === '23505') throw new Error('A draw for this month already exists');
-      throw new Error('Failed to create draw');
+      if (error.code === '23505') {
+        throw new ConflictError('A draw for this month already exists. Choose a different month.');
+      }
+      throw new ConflictError(`Failed to create draw: ${error.message}`);
     }
     return data;
   }
