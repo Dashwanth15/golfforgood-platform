@@ -19,6 +19,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
     { icon: LayoutDashboard, label: 'Overview', href: '/dashboard' },
     { icon: Target, label: 'My Scores', href: '/dashboard/scores' },
     { icon: Heart, label: 'My Charity', href: '/dashboard/charity' },
+    { icon: Gift, label: 'Donations', href: '/dashboard/donations' },
     { icon: Ticket, label: 'Draws', href: '/dashboard/draws' },
     { icon: Award, label: 'Winnings', href: '/dashboard/winnings' },
     { icon: User, label: 'Profile Settings', href: '/dashboard/profile' },

@@ -17,6 +17,7 @@ router.get('/analytics', authenticate, requireAdmin, async (req: Request, res: R
       { count: totalCharities },
       { count: pendingClaims },
       { data: draws },
+      { count: totalDonations, data: donationsData },
     ] = await Promise.all([
       supabase.from('users').select('*', { count: 'exact', head: true }).is('deleted_at', null),
       supabase.from('subscriptions').select('*', { count: 'exact', head: true }).eq('status', 'active').gte('end_date', today),
@@ -24,11 +25,13 @@ router.get('/analytics', authenticate, requireAdmin, async (req: Request, res: R
       supabase.from('charities').select('*', { count: 'exact', head: true }).eq('is_active', true),
       supabase.from('winner_claims').select('*', { count: 'exact', head: true }).eq('claim_status', 'pending'),
       supabase.from('draws').select('total_revenue').eq('status', 'published'),
+      supabase.from('donations').select('donation_amount', { count: 'exact' }),
     ]);
 
     // Calculate MRR and prize pool
     const totalRevenue = (subs ?? []).reduce((sum, s: any) => sum + Number(s.plan?.price_amount ?? 0), 0);
     const totalPrizePool = (draws ?? []).reduce((sum, d: any) => sum + Number(d.total_revenue ?? 0) * 0.5, 0);
+    const totalDonatedAmount = (donationsData ?? []).reduce((sum, d: any) => sum + Number(d.donation_amount ?? 0), 0);
 
     sendSuccess(res, {
       totalUsers,
@@ -37,6 +40,8 @@ router.get('/analytics', authenticate, requireAdmin, async (req: Request, res: R
       totalCharities,
       pendingClaims,
       totalPrizePool: totalPrizePool.toFixed(2),
+      totalDonations,
+      totalDonatedAmount: totalDonatedAmount.toFixed(2),
     });
   } catch (err) { next(err); }
 });

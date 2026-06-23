@@ -154,4 +154,17 @@ export interface Analytics {
   totalCharities: number;
   pendingClaims: number;
   totalPrizePool: string;
+  totalDonations: number;
+  totalDonatedAmount: string;
+}
+
+// ── Donations ─────────────────────────────────────────────────────
+export interface Donation {
+  id: string;
+  user_id: string;
+  charity_id: string;
+  donation_amount: number;
+  donation_type: string;
+  created_at: string;
+  charity?: Pick<Charity, 'name' | 'image_url' | 'category'>;
 }

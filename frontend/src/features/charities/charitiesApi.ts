@@ -22,6 +22,14 @@ export const charitiesApi = {
     const res = await apiClient.post<ApiResponse<CharitySelection>>('/charities/user/my-selection', data);
     return res.data;
   },
+  getMyDonations: async () => {
+    const res = await apiClient.get<ApiResponse<any[]>>('/charities/user/donations');
+    return res.data;
+  },
+  donate: async (id: string, amount: number) => {
+    const res = await apiClient.post<ApiResponse<any>>(`/charities/${id}/donate`, { amount });
+    return res.data;
+  },
   // Admin
   create: async (data: Partial<Charity>) => {
     const res = await apiClient.post<ApiResponse<Charity>>('/charities', data);

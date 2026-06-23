@@ -64,6 +64,21 @@ export class CharitiesController {
       sendSuccess(res, result, 'Charity removed');
     } catch (err) { next(err); }
   }
+
+  async getMyDonations(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const donations = await charitiesService.getMyDonations(req.user!.userId);
+      sendSuccess(res, donations);
+    } catch (err) { next(err); }
+  }
+
+  async donate(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { amount } = req.body;
+      const donation = await charitiesService.makeDonation(req.user!.userId, req.params.id as string, +amount);
+      sendSuccess(res, donation, 'Donation successful');
+    } catch (err) { next(err); }
+  }
 }
 
 export const charitiesController = new CharitiesController();

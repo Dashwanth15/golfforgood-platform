@@ -25,6 +25,7 @@ const Scores = lazy(() => import('./pages/dashboard/Scores'));
 const MyCharity = lazy(() => import('./pages/dashboard/MyCharity'));
 const Draws = lazy(() => import('./pages/dashboard/Draws'));
 const Winnings = lazy(() => import('./pages/dashboard/Winnings'));
+const Donations = lazy(() => import('./pages/dashboard/Donations'));
 const Profile = lazy(() => import('./pages/dashboard/Profile'));
 
 // Admin Pages
@@ -84,6 +85,7 @@ export default function App() {
                 <Route path="/dashboard" element={<DashboardOverview />} />
                 <Route path="/dashboard/scores" element={<Scores />} />
                 <Route path="/dashboard/charity" element={<MyCharity />} />
+                <Route path="/dashboard/donations" element={<Donations />} />
                 <Route path="/dashboard/draws" element={<Draws />} />
                 <Route path="/dashboard/winnings" element={<Winnings />} />
                 <Route path="/dashboard/profile" element={<Profile />} />

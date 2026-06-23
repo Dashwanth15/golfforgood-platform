@@ -84,6 +84,52 @@ export class CharitiesService {
       .eq('id', id);
     return { deleted: true };
   }
+
+  async makeDonation(userId: string, charityId: string, amount: number) {
+    if (amount < 1) throw new Error('Minimum donation is £1');
+
+    // Ensure charity exists
+    const charity = await this.getById(charityId);
+
+    // 1. Insert donation record
+    const { data: donation, error: donationError } = await supabase
+      .from('donations')
+      .insert({
+        user_id: userId,
+        charity_id: charityId,
+        donation_amount: amount,
+        donation_type: 'one_time',
+      })
+      .select('*, charity:charities(*)')
+      .single();
+
+    if (donationError) throw new Error('Failed to process donation');
+
+    // 2. Update charity totals
+    const { error: updateError } = await supabase
+      .from('charities')
+      .update({
+        total_raised: Number(charity.total_raised) + amount,
+        donor_count: Number(charity.donor_count) + 1,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', charityId);
+
+    if (updateError) throw new Error('Failed to update charity stats');
+
+    return donation;
+  }
+
+  async getMyDonations(userId: string) {
+    const { data, error } = await supabase
+      .from('donations')
+      .select('*, charity:charities(name, image_url, category)')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (error) throw new Error('Failed to fetch donations');
+    return data ?? [];
+  }
 }
 
 export const charitiesService = new CharitiesService();

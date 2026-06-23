@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { Search, Filter, Globe, Users, TrendingUp, Heart, ArrowRight, Loader2 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { charitiesApi } from '../../features/charities/charitiesApi';
 import { formatCurrency } from '../../utils/formatters';
 import type { Charity } from '../../types';
@@ -26,63 +26,172 @@ const CAT_COLORS: Record<string, string> = {
   other:       'badge-warning',
 };
 
+import { useAuthStore } from '../../store/authStore';
+import toast from 'react-hot-toast';
+
 function CharityCard({ charity, index }: { charity: Charity; index: number }) {
+  const { isAuthenticated } = useAuthStore();
+  const navigate = useNavigate();
+  const [showDonate, setShowDonate] = useState(false);
+  const [amount, setAmount] = useState<number | ''>('');
+  const queryClient = useQueryClient();
+
+  const donateMut = useMutation({
+    mutationFn: () => charitiesApi.donate(charity.id, Number(amount)),
+    onSuccess: () => {
+      toast.success(`Successfully donated £${amount} to ${charity.name}! 🎉`);
+      setShowDonate(false);
+      setAmount('');
+      queryClient.invalidateQueries({ queryKey: ['charities'] });
+      queryClient.invalidateQueries({ queryKey: ['my-donations'] });
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.message || 'Donation failed. Please try again.');
+    },
+  });
+
+  const handleDonateClick = () => {
+    if (!isAuthenticated) {
+      toast.error('Please login to make a donation.');
+      navigate('/login');
+      return;
+    }
+    setShowDonate(true);
+  };
+
+  const handleDonateSubmit = () => {
+    if (!amount || Number(amount) < 1) {
+      toast.error('Minimum donation is £1.');
+      return;
+    }
+    donateMut.mutate();
+  };
+
   const pct = Math.min(100, Math.round((charity.total_raised / 50000) * 100));
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ delay: index * 0.06, duration: 0.5 }}
-      className="card hover:shadow-elevated transition-all duration-300 hover:-translate-y-1 flex flex-col"
-    >
-      {/* Category + Featured */}
-      <div className="flex items-center justify-between mb-4">
-        <span className={`badge ${CAT_COLORS[charity.category]} capitalize`}>{charity.category}</span>
-        {charity.is_featured && <span className="badge badge-gold">⭐ Featured</span>}
-      </div>
-
-      {/* Charity name + bio */}
-      <h3 className="font-bold text-ink text-lg mb-2">{charity.name}</h3>
-      <p className="text-sm text-ink-muted leading-relaxed mb-4 flex-1 line-clamp-3">
-        {charity.short_bio || charity.description}
-      </p>
-
-      {/* Progress bar */}
-      <div className="mb-4">
-        <div className="flex justify-between text-sm mb-2">
-          <span className="text-ink-muted">Raised so far</span>
-          <span className="font-bold text-brand">{formatCurrency(charity.total_raised)}</span>
+    <>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ delay: index * 0.06, duration: 0.5 }}
+        className="card hover:shadow-elevated transition-all duration-300 hover:-translate-y-1 flex flex-col"
+      >
+        {/* Category + Featured */}
+        <div className="flex items-center justify-between mb-4">
+          <span className={`badge ${CAT_COLORS[charity.category]} capitalize`}>{charity.category}</span>
+          {charity.is_featured && <span className="badge badge-gold">⭐ Featured</span>}
         </div>
-        <div className="h-2 bg-surface rounded-full overflow-hidden">
+
+        {/* Charity name + bio */}
+        <h3 className="font-bold text-ink text-lg mb-2">{charity.name}</h3>
+        <p className="text-sm text-ink-muted leading-relaxed mb-4 flex-1 line-clamp-3">
+          {charity.short_bio || charity.description}
+        </p>
+
+        {/* Progress bar */}
+        <div className="mb-4">
+          <div className="flex justify-between text-sm mb-2">
+            <span className="text-ink-muted">Raised so far</span>
+            <span className="font-bold text-brand">{formatCurrency(charity.total_raised)}</span>
+          </div>
+          <div className="h-2 bg-surface rounded-full overflow-hidden">
+            <motion.div
+              className="h-full bg-brand rounded-full"
+              initial={{ width: 0 }}
+              whileInView={{ width: `${pct}%` }}
+              viewport={{ once: true }}
+              transition={{ duration: 1, delay: index * 0.06 + 0.3 }}
+            />
+          </div>
+        </div>
+
+        {/* Stats */}
+        <div className="flex items-center justify-between text-xs text-ink-muted pt-4 border-t border-border mb-4">
+          <span className="flex items-center gap-1.5">
+            <Users className="w-3.5 h-3.5" /> {charity.donor_count.toLocaleString()} donors
+          </span>
+          {charity.website_url && (
+            <a href={charity.website_url} target="_blank" rel="noreferrer"
+              className="flex items-center gap-1 text-brand hover:underline">
+              <Globe className="w-3.5 h-3.5" /> Website
+            </a>
+          )}
+        </div>
+
+        <div className="flex gap-2">
+          {!isAuthenticated ? (
+            <Link to="/register" className="btn-primary btn-sm flex-1">
+              Support <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          ) : null}
+          <button onClick={handleDonateClick} className="btn-secondary btn-sm flex-1 bg-brand/10 text-brand hover:bg-brand/20 border-0">
+            <Heart className="w-3.5 h-3.5" /> Donate Now
+          </button>
+        </div>
+      </motion.div>
+
+      {/* Donation Modal */}
+      {showDonate && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
           <motion.div
-            className="h-full bg-brand rounded-full"
-            initial={{ width: 0 }}
-            whileInView={{ width: `${pct}%` }}
-            viewport={{ once: true }}
-            transition={{ duration: 1, delay: index * 0.06 + 0.3 }}
-          />
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl relative"
+          >
+            <div className="p-6">
+              <h3 className="text-2xl font-bold text-ink mb-2">Donate to {charity.name}</h3>
+              <p className="text-sm text-ink-muted mb-6">Make a direct one-time contribution.</p>
+              
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                {[10, 25, 50, 100].map(val => (
+                  <button
+                    key={val}
+                    onClick={() => setAmount(val)}
+                    className={`py-3 rounded-xl border-2 font-bold transition-all ${
+                      amount === val ? 'border-brand bg-brand/10 text-brand' : 'border-border text-ink hover:border-brand/40'
+                    }`}
+                  >
+                    £{val}
+                  </button>
+                ))}
+              </div>
+              
+              <div className="relative mb-6">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-muted font-bold">£</span>
+                <input
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={amount}
+                  onChange={e => setAmount(e.target.value ? Number(e.target.value) : '')}
+                  placeholder="Custom amount"
+                  className="input pl-8 font-bold text-lg"
+                />
+              </div>
+
+              <div className="flex gap-3 mt-6">
+                <button
+                  onClick={handleDonateSubmit}
+                  disabled={!amount || donateMut.isPending}
+                  className="btn-primary flex-1"
+                >
+                  {donateMut.isPending ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : `Donate ${amount ? '£' + amount : ''}`}
+                </button>
+                <button
+                  onClick={() => { setShowDonate(false); setAmount(''); }}
+                  disabled={donateMut.isPending}
+                  className="btn-ghost flex-1"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </motion.div>
         </div>
-      </div>
-
-      {/* Stats */}
-      <div className="flex items-center justify-between text-xs text-ink-muted pt-4 border-t border-border mb-4">
-        <span className="flex items-center gap-1.5">
-          <Users className="w-3.5 h-3.5" /> {charity.donor_count.toLocaleString()} donors
-        </span>
-        {charity.website_url && (
-          <a href={charity.website_url} target="_blank" rel="noreferrer"
-            className="flex items-center gap-1 text-brand hover:underline">
-            <Globe className="w-3.5 h-3.5" /> Website
-          </a>
-        )}
-      </div>
-
-      <Link to="/register" className="btn-primary btn-sm w-full">
-        Support This Charity <ArrowRight className="w-3.5 h-3.5" />
-      </Link>
-    </motion.div>
+      )}
+    </>
   );
 }
 

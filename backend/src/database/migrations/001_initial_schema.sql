@@ -146,6 +146,18 @@ CREATE TABLE IF NOT EXISTS winner_claims (
   UNIQUE (draw_id, user_id, match_level)
 );
 
+-- ── 11. DONATIONS ─────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS donations (
+  id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id         UUID NOT NULL REFERENCES users(id) ON DELETE SET NULL,
+  charity_id      UUID NOT NULL REFERENCES charities(id) ON DELETE CASCADE,
+  donation_amount NUMERIC(12,2) NOT NULL CHECK (donation_amount >= 1.00),
+  donation_type   TEXT NOT NULL DEFAULT 'one_time',
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_donations_user_id ON donations(user_id);
+CREATE INDEX IF NOT EXISTS idx_donations_charity_id ON donations(charity_id);
+
 -- ── SEED: Subscription Plans ──────────────────────────────────────
 INSERT INTO subscription_plans (name, plan_type, price_amount, currency, duration_days, features)
 VALUES

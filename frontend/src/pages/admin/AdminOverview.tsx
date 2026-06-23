@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { Users, CreditCard, Heart, Ticket, Gift, TrendingUp, AlertCircle, Loader2, ArrowRight } from 'lucide-react';
+import { Users, CreditCard, Heart, Ticket, Gift, AlertCircle, Loader2, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { adminApi } from '../../features/draws/drawsApi';
 
@@ -41,7 +41,7 @@ export default function AdminOverview() {
     { icon: Heart,    label: 'Partner Charities',    value: stats?.totalCharities ?? 0,     color: 'bg-success',   href: '/admin/charities' },
     { icon: Ticket,   label: 'Total Prize Pool',     value: `£${stats?.totalPrizePool ?? 0}`, color: 'bg-gold',    href: '/admin/draws' },
     { icon: Gift,     label: 'Pending Claims',       value: stats?.pendingClaims ?? 0,      color: 'bg-amber-500', href: '/admin/winners' },
-    { icon: TrendingUp, label: 'Total Revenue',      value: `£${stats?.totalRevenue ?? 0}`, color: 'bg-ink',       href: '/admin/subscriptions' },
+    { icon: Heart,    label: 'Total Donations',      value: stats?.totalDonations ?? 0,     color: 'bg-[#047857]', href: '/admin/charities', sub: `£${stats?.totalDonatedAmount ?? 0} Donated` },
   ];
 
   return (
