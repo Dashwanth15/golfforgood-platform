@@ -5,15 +5,16 @@ import { ConflictError, NotFoundError, UnauthorizedError } from '../../shared/er
 
 export class AuthService {
   async register(full_name: string, email: string, password: string) {
+    const sanitizedEmail = email.toLowerCase().trim();
     // Check existing
     const { data: existing } = await supabase
-      .from('users').select('id').eq('email', email).single();
+      .from('users').select('id').eq('email', sanitizedEmail).single();
     if (existing) throw new ConflictError('Email already registered');
 
     const password_hash = await bcrypt.hash(password, 12);
     const { data: user, error } = await supabase
       .from('users')
-      .insert({ full_name, email, password_hash, role: 'subscriber' })
+      .insert({ full_name, email: sanitizedEmail, password_hash, role: 'subscriber' })
       .select('id, full_name, email, role, avatar_url, is_suspended, created_at')
       .single();
 
@@ -26,15 +27,20 @@ export class AuthService {
   }
 
   async login(email: string, password: string) {
+    const sanitizedEmail = email.toLowerCase().trim();
     const { data: user } = await supabase
       .from('users')
       .select('id, full_name, email, password_hash, role, avatar_url, is_suspended, created_at')
-      .eq('email', email)
+      .eq('email', sanitizedEmail)
       .is('deleted_at', null)
       .single();
 
     if (!user) throw new UnauthorizedError('Invalid credentials');
     if (user.is_suspended) throw new UnauthorizedError('Account suspended');
+
+    if (user.password_hash === 'oauth_google') {
+      throw new UnauthorizedError('Please log in with Google');
+    }
 
     const valid = await bcrypt.compare(password, user.password_hash);
     if (!valid) throw new UnauthorizedError('Invalid credentials');
@@ -51,7 +57,7 @@ export class AuthService {
       throw new UnauthorizedError('Invalid Google session token');
     }
 
-    const email = sbUser.email;
+    const email = sbUser.email?.toLowerCase().trim();
     if (!email) {
       throw new UnauthorizedError('Email not associated with this Google account');
     }
