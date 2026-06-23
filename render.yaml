@@ -43,7 +43,14 @@ services:
       - key: VITE_SUPABASE_ANON_KEY
         sync: false
     routes:
-      # SPA Routing fallback — must come last
+      # ── Static assets — serve directly, do NOT rewrite ────────────
+      - type: rewrite
+        source: /assets/*
+        destination: /assets/:splat
+      - type: rewrite
+        source: /favicon.svg
+        destination: /favicon.svg
+      # ── SPA fallback — HTML navigation routes only ──────────────
       - type: rewrite
         source: /*
         destination: /index.html
