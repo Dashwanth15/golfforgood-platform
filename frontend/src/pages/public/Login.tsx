@@ -65,28 +65,28 @@ export default function Login() {
       </div>
 
       {/* Right — Form (100% on mobile, 50% on desktop) */}
-      <div className="w-full lg:w-1/2 h-full flex flex-col items-center justify-center p-6 sm:p-12 bg-surface overflow-y-auto">
+      <div className="w-full lg:w-1/2 h-full flex flex-col items-center justify-center p-6 sm:px-12 sm:py-6 bg-surface overflow-y-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
           className="w-full max-w-md"
         >
           {/* Mobile Logo */}
-          <Link to="/" className="flex items-center gap-2 mb-8 md:hidden">
+          <Link to="/" className="flex items-center gap-2 mb-6 md:hidden">
             <div className="w-8 h-8 rounded-lg bg-brand flex items-center justify-center">
               <Trophy className="w-4 h-4 text-white" />
             </div>
             <span className="font-bold text-ink">Golf<span className="text-brand">ForGood</span></span>
           </Link>
 
-          <div className="mb-8">
-            <h1 className="text-2xl font-bold text-ink mb-2">Sign in to your account</h1>
+          <div className="mb-6">
+            <h1 className="text-2xl font-bold text-ink mb-1.5">Sign in to your account</h1>
             <p className="text-ink-muted text-sm">Don't have an account? <Link to="/register" className="text-brand font-semibold hover:underline">Sign up free</Link></p>
           </div>
 
           <button
             type="button"
             onClick={handleGoogleLogin}
-            className="w-full flex items-center justify-center gap-2.5 py-2.5 border border-border rounded-xl bg-white hover:bg-surface text-ink font-semibold transition-all hover:shadow-card active:scale-[0.98] cursor-pointer mb-6"
+            className="w-full flex items-center justify-center gap-2.5 py-2.5 border border-border rounded-xl bg-white hover:bg-surface text-ink font-semibold transition-all hover:shadow-card active:scale-[0.98] cursor-pointer mb-4"
           >
             <svg className="w-4.5 h-4.5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
@@ -97,12 +97,12 @@ export default function Login() {
             Continue with Google
           </button>
 
-          <div className="relative my-6 flex items-center justify-center">
+          <div className="relative my-4 flex items-center justify-center">
             <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border"></div></div>
             <span className="relative px-3 bg-surface text-xs text-ink-muted uppercase tracking-wider font-semibold">or email</span>
           </div>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div>
               <label className="label">Email address</label>
               <input {...register('email')} type="email" placeholder="you@example.com" className={`input ${errors.email ? 'input-error' : ''}`} />
@@ -131,7 +131,7 @@ export default function Login() {
           </form>
 
           {/* Demo credentials */}
-          <div className="mt-8 p-4 rounded-xl bg-brand/5 border border-brand/20">
+          <div className="mt-6 p-4 rounded-xl bg-brand/5 border border-brand/20">
             <p className="text-xs font-semibold text-brand mb-2">Demo Credentials</p>
             <p className="text-xs text-ink-muted">Admin: <span className="font-mono text-ink">admin@golfforgood.com</span></p>
             <p className="text-xs text-ink-muted">Password: <span className="font-mono text-ink">Admin@GolfForGood2026</span></p>
