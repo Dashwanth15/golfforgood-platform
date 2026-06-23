@@ -77,6 +77,44 @@ export class ScoresService {
     await supabase.from('user_scores').delete().eq('id', scoreId);
     return { deleted: true };
   }
+
+  // --- ADMIN METHODS ---
+  async adminGetUserScores(userId: string) {
+    const { data } = await supabase
+      .from('user_scores')
+      .select('id, score_value, score_date, created_at, updated_at')
+      .eq('user_id', userId)
+      .order('score_date', { ascending: false });
+    return data ?? [];
+  }
+
+  async adminUpdateScore(scoreId: string, updates: { score_value?: number; score_date?: string }) {
+    const { data: existing } = await supabase
+      .from('user_scores').select('id, user_id').eq('id', scoreId).single();
+    if (!existing) throw new NotFoundError('Score');
+
+    const { data, error } = await supabase
+      .from('user_scores')
+      .update({ ...updates, updated_at: new Date().toISOString() })
+      .eq('id', scoreId)
+      .select()
+      .single();
+
+    if (error) {
+      if (error.code === '23505') throw new ValidationError('A score for this date already exists for this user');
+      throw new Error(`Failed to update score: ${error.message}`);
+    }
+    return data;
+  }
+
+  async adminDeleteScore(scoreId: string) {
+    const { data: existing } = await supabase
+      .from('user_scores').select('id').eq('id', scoreId).single();
+    if (!existing) throw new NotFoundError('Score');
+
+    await supabase.from('user_scores').delete().eq('id', scoreId);
+    return { deleted: true };
+  }
 }
 
 export const scoresService = new ScoresService();

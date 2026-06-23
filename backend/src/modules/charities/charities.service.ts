@@ -130,6 +130,44 @@ export class CharitiesService {
     if (error) throw new Error('Failed to fetch donations');
     return data ?? [];
   }
+
+  async uploadMedia(charityId: string, fileBuffer: Buffer, mimetype: string) {
+    // Verify charity exists
+    const charity = await this.getById(charityId);
+
+    // Build storage path: charity-media/<charityId>/<timestamp>.<ext>
+    const ext = mimetype.split('/')[1].replace('jpeg', 'jpg');
+    const storagePath = `${charityId}/${Date.now()}.${ext}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('charity-media')
+      .upload(storagePath, fileBuffer, {
+        contentType: mimetype,
+        upsert: true,
+      });
+
+    if (uploadError) {
+      console.error('Supabase Storage upload error:', uploadError);
+      throw new Error('Failed to upload image to storage');
+    }
+
+    const { data: urlData } = supabase.storage
+      .from('charity-media')
+      .getPublicUrl(storagePath);
+
+    const publicUrl = urlData.publicUrl;
+
+    const { data, error } = await supabase
+      .from('charities')
+      .update({ image_url: publicUrl, updated_at: new Date().toISOString() })
+      .eq('id', charityId)
+      .select()
+      .single();
+
+    if (error || !data) throw new Error('Failed to update charity image URL');
+
+    return publicUrl;
+  }
 }
 
 export const charitiesService = new CharitiesService();

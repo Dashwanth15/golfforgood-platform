@@ -14,7 +14,8 @@ router.post('/google',   (req, res, next) => authController.loginWithGoogle(req,
 router.get('/me', authenticate, (req, res, next) => authController.getMe(req as any, res, next));
 
 // Admin
-router.get('/admin/users',              authenticate, requireAdmin, (req, res, next) => authController.getAllUsers(req, res, next));
-router.patch('/admin/users/:id/suspend', authenticate, requireAdmin, (req, res, next) => authController.suspendUser(req, res, next));
+  router.get('/admin/users',              authenticate, requireAdmin, (req, res, next) => authController.getAllUsers(req, res, next));
+  router.patch('/admin/users/:id',        authenticate, requireAdmin, (req, res, next) => authController.updateUser(req, res, next));
+  router.patch('/admin/users/:id/suspend', authenticate, requireAdmin, (req, res, next) => authController.suspendUser(req, res, next));
 
 export default router;

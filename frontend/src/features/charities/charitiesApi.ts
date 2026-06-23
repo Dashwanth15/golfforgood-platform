@@ -43,4 +43,12 @@ export const charitiesApi = {
     const res = await apiClient.delete<ApiResponse<{ deleted: boolean }>>(`/charities/${id}`);
     return res.data;
   },
+  uploadMedia: async (id: string, file: File) => {
+    const formData = new FormData();
+    formData.append('image', file);
+    const res = await apiClient.post<ApiResponse<{ image_url: string }>>(`/charities/${id}/media`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return res.data;
+  },
 };

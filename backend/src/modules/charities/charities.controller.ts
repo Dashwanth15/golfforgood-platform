@@ -79,6 +79,19 @@ export class CharitiesController {
       sendSuccess(res, donation, 'Donation successful');
     } catch (err) { next(err); }
   }
+
+  async uploadMedia(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.file) {
+        throw new Error('No file uploaded. Please attach an image file.');
+      }
+      const charityId = req.params.id as string;
+      // Use existing service logic instead of importing supabase in controller if possible, 
+      // but winners.routes.ts used supabase directly. I will use charitiesService.
+      const url = await charitiesService.uploadMedia(charityId, req.file.buffer, req.file.mimetype);
+      sendSuccess(res, { image_url: url }, 'Media uploaded successfully');
+    } catch (err) { next(err); }
+  }
 }
 
 export const charitiesController = new CharitiesController();

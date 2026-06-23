@@ -148,6 +148,22 @@ export class AuthService {
     if (!data) throw new NotFoundError('User');
     return data;
   }
+
+  async updateUser(id: string, updates: { full_name?: string; email?: string; role?: string }) {
+    const { data, error } = await supabase
+      .from('users')
+      .update({ ...updates, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .select('id, full_name, email, role, is_suspended, created_at')
+      .single();
+
+    if (error) {
+      if (error.code === '23505') throw new ConflictError('Email already in use');
+      throw new Error(`Failed to update user: ${error.message}`);
+    }
+    if (!data) throw new NotFoundError('User');
+    return data;
+  }
 }
 
 export const authService = new AuthService();

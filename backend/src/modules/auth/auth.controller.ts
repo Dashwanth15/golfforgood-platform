@@ -51,6 +51,15 @@ export class AuthController {
     } catch (err) { next(err); }
   }
 
+  async updateUser(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const id = String(req.params.id);
+      const { full_name, email, role } = req.body;
+      const user = await authService.updateUser(id, { full_name, email, role });
+      sendSuccess(res, user, 'User updated successfully');
+    } catch (err) { next(err); }
+  }
+
   async loginWithGoogle(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { access_token } = req.body;
