@@ -8,6 +8,46 @@
 -- Note: We use predefined UUIDs for users to establish reliable relationships.
 -- ============================================================
 
+-- ── 0. CHARITIES (DEDUPLICATION & SEEDING) ────────────────────────
+-- Deduplicate existing charities to fix prior schema issues, enforce a 
+-- UNIQUE constraint, and seed 11 new realistic UK charities (Total: 16).
+
+-- Update donations to point to canonical IDs
+WITH canonical_charities AS (SELECT name, MIN(created_at) as first_created FROM charities GROUP BY name),
+canonical_ids AS (SELECT c.id as canonical_id, c.name FROM charities c JOIN canonical_charities cc ON c.name = cc.name AND c.created_at = cc.first_created DISTINCT ON (c.name))
+UPDATE donations d SET charity_id = ci.canonical_id FROM charities c JOIN canonical_ids ci ON c.name = ci.name WHERE d.charity_id = c.id AND c.id != ci.canonical_id;
+
+-- Update user selections to point to canonical IDs
+WITH canonical_charities AS (SELECT name, MIN(created_at) as first_created FROM charities GROUP BY name),
+canonical_ids AS (SELECT c.id as canonical_id, c.name FROM charities c JOIN canonical_charities cc ON c.name = cc.name AND c.created_at = cc.first_created DISTINCT ON (c.name))
+UPDATE user_charity_selections ucs SET charity_id = ci.canonical_id FROM charities c JOIN canonical_ids ci ON c.name = ci.name WHERE ucs.charity_id = c.id AND c.id != ci.canonical_id;
+
+-- Delete the duplicates now that foreign keys are migrated
+WITH canonical_charities AS (SELECT name, MIN(created_at) as first_created FROM charities GROUP BY name),
+canonical_ids AS (SELECT c.id as canonical_id, c.name FROM charities c JOIN canonical_charities cc ON c.name = cc.name AND c.created_at = cc.first_created DISTINCT ON (c.name))
+DELETE FROM charities c WHERE NOT EXISTS (SELECT 1 FROM canonical_ids ci WHERE ci.canonical_id = c.id);
+
+-- Add UNIQUE constraint to prevent future duplication
+ALTER TABLE charities DROP CONSTRAINT IF EXISTS charities_name_key;
+ALTER TABLE charities ADD CONSTRAINT charities_name_key UNIQUE (name);
+
+-- Insert 11 more realistic UK charities to make 16 total
+INSERT INTO charities (name, description, short_bio, website_url, category, is_featured, total_raised, donor_count)
+VALUES
+  ('UK Cancer Research Alliance', 'Funding critical research into cancer prevention, diagnosis, and treatment across the UK.', 'Together we will beat cancer.', 'https://ukcra.example.org', 'health', true, 55000.00, 1500),
+  ('London Homeless Rescue', 'Providing emergency shelter, hot meals, and pathways to permanent housing for London''s homeless population.', 'No one should sleep rough.', 'https://londonhomeless.example.org', 'community', false, 12000.00, 450),
+  ('Scottish Highlands Trust', 'Protecting the natural beauty and biodiversity of the Scottish Highlands for future generations.', 'Preserving Scotland''s wild heart.', 'https://highlandstrust.example.org', 'environment', false, 28000.00, 800),
+  ('Welsh Youth Arts', 'Supporting creative programs in music, theater, and visual arts for underprivileged youth in Wales.', 'Inspiring the next generation of artists.', 'https://welsharts.example.org', 'education', false, 8500.00, 210),
+  ('Fairways for Youth', 'Providing access to golf equipment and coaching for children from low-income families.', 'Empowering kids through golf.', 'https://fairwaysforyouth.example.org', 'sports', true, 12500.00, 45),
+  ('British Heart Care', 'Supporting patients recovering from heart surgery and funding community defibrillator installations.', 'Every heartbeat counts.', 'https://bhcare.example.org', 'health', false, 31000.00, 920),
+  ('Clean Rivers UK', 'Organizing volunteer cleanups and lobbying for stricter water quality regulations in British rivers.', 'Reviving our waterways.', 'https://cleanrivers.example.org', 'environment', false, 17500.00, 610),
+  ('Tech For Schools', 'Refurbishing and distributing laptops and tablets to schools in disadvantaged areas.', 'Closing the digital divide.', 'https://techforschools.example.org', 'education', false, 22000.00, 530),
+  ('Elderly Companions Network', 'Connecting volunteers with isolated elderly individuals to provide friendship and support.', 'No one should face aging alone.', 'https://elderlycompanions.example.org', 'community', false, 9000.00, 340),
+  ('Disabled Athletes Fund', 'Funding adaptive sports equipment and travel for disabled athletes competing nationally.', 'Breaking barriers in sports.', 'https://disabledsports.example.org', 'sports', false, 14200.00, 410),
+  ('Mental Health UK Support', 'Providing 24/7 crisis helplines and subsidized therapy for individuals facing mental health challenges.', 'You are not alone.', 'https://mhus.example.org', 'health', true, 42000.00, 1150)
+ON CONFLICT (name) DO NOTHING;
+
+
 -- ── 1. USERS ──────────────────────────────────────────────────────
 -- Generating 25 realistic UK-based users with diverse profiles.
 
