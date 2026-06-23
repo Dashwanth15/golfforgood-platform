@@ -183,3 +183,124 @@ CREATE INDEX IF NOT EXISTS idx_scores_user           ON user_scores(user_id);
 CREATE INDEX IF NOT EXISTS idx_draws_status          ON draws(status);
 CREATE INDEX IF NOT EXISTS idx_winner_claims_user    ON winner_claims(user_id);
 CREATE INDEX IF NOT EXISTS idx_winner_claims_status  ON winner_claims(claim_status);
+
+-- ============================================================
+-- SUPABASE STORAGE — Winner Proof Upload
+-- ============================================================
+-- The winner_claims.proof_url column (defined above) stores the
+-- public URL of the uploaded image.  The actual binary file is
+-- stored in Supabase Storage under the bucket "winner-proofs".
+--
+-- DATABASE CHANGES REQUIRED: NONE
+--   winner_claims.proof_url TEXT already exists and is reused.
+--   No new columns or tables are needed.
+--
+-- INFRASTRUCTURE SETUP REQUIRED (run once in Supabase dashboard):
+-- ============================================================
+
+-- ── Step 1: Create the storage bucket ────────────────────────────
+-- Run this in Supabase Dashboard → Storage → New Bucket
+-- OR via the Management API / CLI.
+--
+-- Bucket name  : winner-proofs
+-- Public       : true   (so generated URLs are directly accessible
+--                        in the browser without signed tokens)
+-- File size limit : 5242880 bytes (5 MB)
+-- Allowed MIME types: image/jpeg, image/png, image/webp
+--
+-- Supabase CLI equivalent:
+--   supabase storage create winner-proofs --public
+--
+-- NOTE: The backend uses the Service Role key which bypasses RLS
+-- for all write operations. The policies below govern direct
+-- browser/client access to storage objects.
+
+-- ── Step 2: Storage RLS Policies ─────────────────────────────────
+-- Paste these into Supabase Dashboard → Storage → winner-proofs
+-- → Policies → New Policy → "For full customization"
+--
+-- Policy 1 — Authenticated users can upload their own proof files.
+-- This ensures a logged-in user can only write to a path prefixed
+-- with their own user_id, preventing users from overwriting each
+-- other's proof images.
+--
+-- CREATE POLICY "Users can upload their own proof"
+-- ON storage.objects
+-- FOR INSERT
+-- TO authenticated
+-- WITH CHECK (
+--   bucket_id = 'winner-proofs'
+--   AND (storage.foldername(name))[1] = auth.uid()::text
+-- );
+--
+-- Policy 2 — Public read access so proof images can be displayed
+-- in the browser (admin dashboard thumbnail, user's winnings page).
+-- Without this, the stored URLs return 403 to unauthenticated GET
+-- requests, breaking image previews.
+--
+-- CREATE POLICY "Anyone can view proof images"
+-- ON storage.objects
+-- FOR SELECT
+-- TO public
+-- USING (bucket_id = 'winner-proofs');
+--
+-- Policy 3 — Users can replace (update) their own proof if they need
+-- to re-upload.  Scoped to their own folder so they cannot overwrite
+-- other users' files.
+--
+-- CREATE POLICY "Users can update their own proof"
+-- ON storage.objects
+-- FOR UPDATE
+-- TO authenticated
+-- USING (
+--   bucket_id = 'winner-proofs'
+--   AND (storage.foldername(name))[1] = auth.uid()::text
+-- )
+-- WITH CHECK (
+--   bucket_id = 'winner-proofs'
+--   AND (storage.foldername(name))[1] = auth.uid()::text
+-- );
+--
+-- Policy 4 — Admins can delete proof objects (e.g., when a claim is
+-- rejected and the file must be purged for compliance).
+-- The backend's Service Role key already bypasses this for server-
+-- side deletions, but this policy allows admin users operating
+-- directly through the Supabase dashboard.
+--
+-- CREATE POLICY "Admins can delete any proof"
+-- ON storage.objects
+-- FOR DELETE
+-- TO authenticated
+-- USING (
+--   bucket_id = 'winner-proofs'
+--   AND EXISTS (
+--     SELECT 1 FROM public.users
+--     WHERE id = auth.uid()
+--     AND role = 'admin'
+--   )
+-- );
+
+-- ── Step 3: Storage path convention ──────────────────────────────
+-- All files are uploaded by the backend using the path pattern:
+--
+--   winner-proofs/<user_id>/<claim_id>/<timestamp>.<ext>
+--
+-- Example:
+--   winner-proofs/a1111111-1111-1111-1111-111111111111/
+--                 e1111111-1111-1111-1111-111111111111/
+--                 1719000000000.jpg
+--
+-- This path structure:
+--   • Scopes per-user uploads so Policy 1 & 3 work correctly.
+--   • Scopes per-claim so a user with multiple claims keeps files
+--     separated and a re-upload for claim B never touches claim A.
+--   • Uses a timestamp suffix to prevent browser caching of a
+--     previously rejected proof image.
+
+-- ── Summary ───────────────────────────────────────────────────────
+-- Table changes  : 0  (proof_url TEXT already present in schema)
+-- New columns    : 0
+-- New tables     : 0
+-- Storage bucket : winner-proofs  (create manually — see Step 1)
+-- RLS policies   : 4  (see Step 2 — paste into Supabase dashboard)
+-- ============================================================
