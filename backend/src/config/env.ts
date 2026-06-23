@@ -20,4 +20,6 @@ export const envConfig = {
   SUPABASE_SERVICE_ROLE_KEY: required('SUPABASE_SERVICE_ROLE_KEY'),
   SUPABASE_ANON_KEY:      process.env.SUPABASE_ANON_KEY ?? '',
   FRONTEND_URL:           process.env.FRONTEND_URL ?? 'http://localhost:5173',
+  RESEND_API_KEY:         required('RESEND_API_KEY'),
+  EMAIL_FROM:             process.env.EMAIL_FROM ?? 'onboarding@resend.dev',
 };

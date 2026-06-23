@@ -7,6 +7,7 @@ import { requireAdmin } from '../../middleware/role.middleware';
 import { AuthenticatedRequest } from '../../middleware/auth.middleware';
 import { winnersService } from './winners.service';
 import { ValidationError, ForbiddenError, NotFoundError } from '../../shared/errors/AppError';
+import { EmailService } from '../../services/email.service';
 
 const router = Router();
 
@@ -143,8 +144,27 @@ router.patch('/:id/review', authenticate, requireAdmin, async (req: Request, res
         updated_at: new Date().toISOString(),
       })
       .eq('id', req.params.id)
-      .select()
+      .select('*, user:users(full_name, email)')
       .single();
+
+    if (data) {
+      const u = Array.isArray(data.user) ? data.user[0] : data.user;
+      if (u && u.email) {
+        if (status === 'approved') {
+          EmailService.sendClaimApproved(
+            { email: u.email, name: u.full_name.split(' ')[0] },
+            `£${Number(data.prize_amount).toFixed(2)}`,
+            data.payment_status
+          ).catch(e => console.error(e));
+        } else if (status === 'rejected') {
+          EmailService.sendClaimRejected(
+            { email: u.email, name: u.full_name.split(' ')[0] },
+            data.admin_notes || 'Failed identity verification'
+          ).catch(e => console.error(e));
+        }
+      }
+    }
+
     sendSuccess(res, data, `Claim ${status}`);
   } catch (err) { next(err); }
 });

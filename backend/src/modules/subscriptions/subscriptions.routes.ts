@@ -4,6 +4,7 @@ import { sendSuccess, sendCreated } from '../../shared/utils/response';
 import { authenticate } from '../../middleware/auth.middleware';
 import { requireAdmin } from '../../middleware/role.middleware';
 import { AuthenticatedRequest } from '../../middleware/auth.middleware';
+import { EmailService } from '../../services/email.service';
 
 const router = Router();
 
@@ -67,6 +68,20 @@ router.post('/', authenticate, async (req: AuthenticatedRequest, res: Response, 
       })
       .select('*, plan:subscription_plans(*)')
       .single();
+
+    // Send email (background)
+    if (sub) {
+      const { data: user } = await supabase.from('users').select('full_name, email').eq('id', req.user!.userId).single();
+      if (user && user.email) {
+        EmailService.sendSubscriptionActivated(
+          { email: user.email, name: user.full_name.split(' ')[0] },
+          plan.name,
+          sub.start_date,
+          sub.end_date,
+          sub.renewal_date
+        ).catch(e => console.error(e));
+      }
+    }
 
     sendCreated(res, sub, 'Subscription activated');
   } catch (err) { next(err); }

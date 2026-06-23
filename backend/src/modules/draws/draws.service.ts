@@ -1,6 +1,7 @@
 import { supabase } from '../../config/database';
 import { NotFoundError, ForbiddenError, ConflictError } from '../../shared/errors/AppError';
 import { APP_CONSTANTS } from '../../config/constants';
+import { EmailService } from '../../services/email.service';
 
 // ── Fisher-Yates shuffle on pool 1-45, pick 5 ────────────────────
 function generateWinningNumbers(): number[] {
@@ -197,14 +198,15 @@ export class DrawsService {
     const revenue = Number(draw.total_revenue);
     const rollover = Number(draw.jackpot_rollover);
 
-    // Get all active subscription user IDs
+    // Get all active subscription user IDs and emails
     const today = new Date().toISOString().split('T')[0];
     const { data: activeSubs } = await supabase
       .from('subscriptions')
-      .select('user_id')
+      .select('user_id, users(email)')
       .eq('status', 'active')
       .gte('end_date', today);
     const activeUserIds = new Set((activeSubs ?? []).map(s => s.user_id));
+    const subscriberEmails = (activeSubs ?? []).map(s => (s.users as any).email).filter(Boolean);
 
     // Get all user scores
     const { data: scores } = await supabase
@@ -333,6 +335,44 @@ export class DrawsService {
       .eq('id', drawId)
       .select('*, prize_pools(*)')
       .single();
+
+    // Send emails (background)
+    if (published) {
+      EmailService.sendDrawResultsPublished(subscriberEmails, published.draw_month, winning).catch(e => console.error(e));
+      
+      // Get all winners user info to send alerts
+      const winnerUserIds = Object.entries(eligibleUserScores)
+        .filter(([_, numbers]) => getMatchLevel(countMatches(numbers, winning)))
+        .map(([id]) => id);
+
+      if (winnerUserIds.length > 0) {
+        const { data: winnerUsers } = await supabase
+          .from('users')
+          .select('id, full_name, email')
+          .in('id', winnerUserIds);
+          
+        if (winnerUsers) {
+          for (const [userId, numbers] of Object.entries(eligibleUserScores)) {
+            const m = countMatches(numbers, winning);
+            const lvl = getMatchLevel(m);
+            if (lvl) {
+              const u = winnerUsers.find(wu => wu.id === userId);
+              if (u && u.email) {
+                const pool = pools.find(p => p.match_level === lvl)!;
+                const winnerList = winners[lvl];
+                const prizeAmount = winnerList.length > 0 ? pool.pool_amount / winnerList.length : 0;
+                
+                EmailService.sendWinnerAlert(
+                  { email: u.email, name: u.full_name.split(' ')[0] },
+                  `£${prizeAmount.toFixed(2)}`,
+                  lvl.replace('_', ' ')
+                ).catch(e => console.error(e));
+              }
+            }
+          }
+        }
+      }
+    }
 
     return published;
   }
