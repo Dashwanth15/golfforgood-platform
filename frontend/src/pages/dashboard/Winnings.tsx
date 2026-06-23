@@ -1,11 +1,14 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { Award, Loader2, Upload, CheckCircle, Clock, XCircle, Trophy, ExternalLink } from 'lucide-react';
+import { Award, Loader2, Upload, CheckCircle, Clock, XCircle, Trophy, ImageIcon, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { winnersApi } from '../../features/draws/drawsApi';
 import { formatCurrency, formatDate, formatDrawMonth, getMatchLevelLabel } from '../../utils/formatters';
 import type { WinnerClaim } from '../../types';
+
+const ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+const MAX_SIZE_MB = 5;
 
 const claimIcons: Record<string, any> = {
   pending: Clock,
@@ -19,19 +22,54 @@ const claimColors: Record<string, string> = {
 };
 
 function ClaimCard({ claim }: { claim: WinnerClaim }) {
-  const [proofUrl, setProofUrl] = useState('');
-  const [showProof, setShowProof] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+  const [showUpload, setShowUpload] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const qc = useQueryClient();
 
   const uploadMut = useMutation({
-    mutationFn: () => winnersApi.uploadProof(claim.id, proofUrl),
+    mutationFn: () => winnersApi.uploadProof(claim.id, selectedFile!),
     onSuccess: () => {
-      toast.success('Proof submitted!');
+      toast.success('Proof submitted successfully! 🎉');
       qc.invalidateQueries({ queryKey: ['my-winnings'] });
-      setShowProof(false);
+      setShowUpload(false);
+      setSelectedFile(null);
+      setPreview(null);
     },
-    onError: () => toast.error('Failed to submit proof'),
+    onError: (err: any) => {
+      toast.error(err.response?.data?.message || 'Upload failed. Please try again.');
+    },
   });
+
+  const handleFileSelect = (file: File) => {
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      toast.error('Invalid file type. Only JPG, PNG, and WebP images are allowed.');
+      return;
+    }
+    if (file.size > MAX_SIZE_MB * 1024 * 1024) {
+      toast.error(`File too large. Maximum size is ${MAX_SIZE_MB} MB.`);
+      return;
+    }
+    setSelectedFile(file);
+    const reader = new FileReader();
+    reader.onload = (e) => setPreview(e.target?.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+    const file = e.dataTransfer.files[0];
+    if (file) handleFileSelect(file);
+  };
+
+  const clearFile = () => {
+    setSelectedFile(null);
+    setPreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
 
   const StatusIcon = claimIcons[claim.claim_status] ?? Clock;
 
@@ -88,40 +126,101 @@ function ClaimCard({ claim }: { claim: WinnerClaim }) {
         </div>
       )}
 
-      {/* Upload proof */}
+      {/* Upload proof — only for pending claims */}
       {claim.claim_status === 'pending' && (
         <div>
           {claim.proof_url ? (
-            <a href={claim.proof_url} target="_blank" rel="noreferrer"
-              className="flex items-center gap-2 text-sm text-brand hover:underline">
-              <ExternalLink className="w-4 h-4" /> View submitted proof
-            </a>
-          ) : (
-            showProof ? (
-              <div className="space-y-3">
-                <input
-                  value={proofUrl}
-                  onChange={e => setProofUrl(e.target.value)}
-                  placeholder="Enter proof URL (doc / image link)"
-                  className="input text-sm"
-                />
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => uploadMut.mutate()}
-                    disabled={!proofUrl || uploadMut.isPending}
-                    className="btn-primary btn-sm"
-                  >
-                    {uploadMut.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
-                    Submit
-                  </button>
-                  <button onClick={() => setShowProof(false)} className="btn-ghost btn-sm">Cancel</button>
-                </div>
+            /* Proof already submitted */
+            <div className="flex items-center gap-3 p-3 rounded-xl bg-green-50 border border-green-200">
+              <CheckCircle className="w-4 h-4 text-success flex-shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-green-800">Proof submitted — awaiting admin review</p>
               </div>
-            ) : (
-              <button onClick={() => setShowProof(true)} className="btn-secondary btn-sm">
-                <Upload className="w-3.5 h-3.5" /> Upload Proof
-              </button>
-            )
+              <a
+                href={claim.proof_url}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-1 text-xs text-brand hover:underline flex-shrink-0"
+              >
+                <ImageIcon className="w-3.5 h-3.5" /> View
+              </a>
+            </div>
+          ) : showUpload ? (
+            /* File upload panel */
+            <div className="space-y-3">
+              <p className="text-xs font-semibold text-ink uppercase tracking-wider">Upload Proof of Identity</p>
+
+              {/* Drop zone */}
+              {!selectedFile ? (
+                <div
+                  onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+                  onDragLeave={() => setDragOver(false)}
+                  onDrop={handleDrop}
+                  onClick={() => fileInputRef.current?.click()}
+                  className={`border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all duration-200 ${
+                    dragOver
+                      ? 'border-brand bg-brand/5'
+                      : 'border-border hover:border-brand/40 hover:bg-surface'
+                  }`}
+                >
+                  <Upload className="w-8 h-8 text-ink-muted mx-auto mb-3" />
+                  <p className="text-sm font-medium text-ink mb-1">Drop your image here or click to browse</p>
+                  <p className="text-xs text-ink-muted">JPG, PNG, WebP · Max 5 MB</p>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/jpg,image/png,image/webp"
+                    className="hidden"
+                    onChange={(e) => e.target.files?.[0] && handleFileSelect(e.target.files[0])}
+                  />
+                </div>
+              ) : (
+                /* File preview */
+                <div className="relative rounded-2xl overflow-hidden border border-border">
+                  <img
+                    src={preview!}
+                    alt="Proof preview"
+                    className="w-full h-48 object-cover"
+                  />
+                  <button
+                    onClick={clearFile}
+                    className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                  <div className="p-3 bg-surface">
+                    <p className="text-xs text-ink-muted truncate">{selectedFile.name}</p>
+                    <p className="text-xs text-ink-muted">{(selectedFile.size / 1024 / 1024).toFixed(2)} MB</p>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex gap-2">
+                <button
+                  onClick={() => uploadMut.mutate()}
+                  disabled={!selectedFile || uploadMut.isPending}
+                  className="btn-primary btn-sm flex-1"
+                >
+                  {uploadMut.isPending ? (
+                    <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Uploading...</>
+                  ) : (
+                    <><Upload className="w-3.5 h-3.5" /> Submit Proof</>
+                  )}
+                </button>
+                <button
+                  onClick={() => { setShowUpload(false); clearFile(); }}
+                  disabled={uploadMut.isPending}
+                  className="btn-ghost btn-sm"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ) : (
+            /* Trigger button */
+            <button onClick={() => setShowUpload(true)} className="btn-secondary btn-sm w-full">
+              <Upload className="w-3.5 h-3.5" /> Upload Proof of Identity
+            </button>
           )}
         </div>
       )}

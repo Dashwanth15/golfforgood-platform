@@ -1,40 +1,115 @@
 import { Router, Request, Response, NextFunction } from 'express';
+import multer from 'multer';
 import { supabase } from '../../config/database';
 import { sendSuccess } from '../../shared/utils/response';
 import { authenticate } from '../../middleware/auth.middleware';
 import { requireAdmin } from '../../middleware/role.middleware';
 import { AuthenticatedRequest } from '../../middleware/auth.middleware';
+import { winnersService } from './winners.service';
+import { ValidationError, ForbiddenError, NotFoundError } from '../../shared/errors/AppError';
 
 const router = Router();
+
+// ── Multer: memory storage for Supabase upload ────────────────────
+const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: MAX_FILE_SIZE_BYTES },
+  fileFilter: (_req, file, cb) => {
+    if (ALLOWED_MIME_TYPES.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('INVALID_FILE_TYPE'));
+    }
+  },
+});
 
 // ── Subscriber: my winnings ───────────────────────────────────────
 router.get('/my', authenticate, async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
-    const { data } = await supabase
-      .from('winner_claims')
-      .select('*, draw:draws(draw_month, winning_numbers)')
-      .eq('user_id', req.user!.userId)
-      .order('created_at', { ascending: false });
-    sendSuccess(res, data ?? []);
+    const data = await winnersService.getMyWinnings(req.user!.userId);
+    sendSuccess(res, data);
   } catch (err) { next(err); }
 });
 
-// Upload proof
-router.post('/:id/proof', authenticate, async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-  try {
-    const { proof_url } = req.body;
-    const { data } = await supabase
-      .from('winner_claims')
-      .update({ proof_url, updated_at: new Date().toISOString() })
-      .eq('id', req.params.id)
-      .eq('user_id', req.user!.userId)
-      .select()
-      .single();
-    sendSuccess(res, data, 'Proof submitted');
-  } catch (err) { next(err); }
-});
+// ── Upload proof (real file upload to Supabase Storage) ──────────
+router.post(
+  '/:id/proof',
+  authenticate,
+  (req: Request, res: Response, next: NextFunction) => {
+    upload.single('proof')(req, res, (err) => {
+      if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') {
+        return next(new ValidationError('File too large. Maximum size is 5 MB.'));
+      }
+      if (err && err.message === 'INVALID_FILE_TYPE') {
+        return next(new ValidationError('Invalid file type. Only JPG, PNG, and WebP images are allowed.'));
+      }
+      if (err) return next(err);
+      next();
+    });
+  },
+  async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    try {
+      const { id: claimId } = req.params;
+      const userId = req.user!.userId;
 
-// ── Admin ─────────────────────────────────────────────────────────
+      if (!req.file) {
+        throw new ValidationError('No file uploaded. Please attach an image file.');
+      }
+
+      // Verify ownership before processing the upload
+      const { data: claim } = await supabase
+        .from('winner_claims')
+        .select('id, user_id, claim_status')
+        .eq('id', claimId)
+        .single();
+
+      if (!claim) throw new NotFoundError('Claim');
+      if (claim.user_id !== userId) throw new ForbiddenError('You can only upload proof for your own claims');
+      if (claim.claim_status !== 'pending') throw new ValidationError('This claim has already been reviewed');
+
+      // Build a unique storage path: winner-proofs/<userId>/<claimId>/<timestamp>.<ext>
+      const ext = req.file.mimetype.split('/')[1].replace('jpeg', 'jpg');
+      const storagePath = `${userId}/${claimId}/${Date.now()}.${ext}`;
+
+      // Upload to Supabase Storage bucket "winner-proofs"
+      const { error: uploadError } = await supabase.storage
+        .from('winner-proofs')
+        .upload(storagePath, req.file.buffer, {
+          contentType: req.file.mimetype,
+          upsert: true,
+        });
+
+      if (uploadError) {
+        console.error('Supabase Storage upload error:', uploadError);
+        throw new Error('Failed to upload file. Please try again.');
+      }
+
+      // Get the public URL for the uploaded file
+      const { data: urlData } = supabase.storage
+        .from('winner-proofs')
+        .getPublicUrl(storagePath);
+
+      const publicUrl = urlData.publicUrl;
+
+      // Save the public URL to the winner_claims table
+      const { data, error } = await supabase
+        .from('winner_claims')
+        .update({ proof_url: publicUrl, updated_at: new Date().toISOString() })
+        .eq('id', claimId)
+        .select()
+        .single();
+
+      if (error) throw new Error('Failed to save proof URL');
+
+      sendSuccess(res, data, 'Proof submitted successfully');
+    } catch (err) { next(err); }
+  }
+);
+
+// ── Admin: list all claims ────────────────────────────────────────
 router.get('/', authenticate, requireAdmin, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { status, payment } = req.query as any;
@@ -49,14 +124,18 @@ router.get('/', authenticate, requireAdmin, async (req: Request, res: Response, 
   } catch (err) { next(err); }
 });
 
+// ── Admin: review claim (approve or reject) ───────────────────────
 router.patch('/:id/review', authenticate, requireAdmin, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { status, notes } = req.body;
+    if (!['approved', 'rejected'].includes(status)) {
+      throw new ValidationError('Status must be "approved" or "rejected"');
+    }
     const { data } = await supabase
       .from('winner_claims')
       .update({
         claim_status: status,
-        admin_notes: notes,
+        admin_notes: notes ?? null,
         reviewed_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       })
@@ -67,6 +146,7 @@ router.patch('/:id/review', authenticate, requireAdmin, async (req: Request, res
   } catch (err) { next(err); }
 });
 
+// ── Admin: mark claim as paid ─────────────────────────────────────
 router.patch('/:id/payment', authenticate, requireAdmin, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { data } = await supabase

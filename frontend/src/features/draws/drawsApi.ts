@@ -42,8 +42,12 @@ export const winnersApi = {
     const res = await apiClient.get<ApiResponse<WinnerClaim[]>>('/winners/my');
     return res.data;
   },
-  uploadProof: async (id: string, proof_url: string) => {
-    const res = await apiClient.post<ApiResponse<WinnerClaim>>(`/winners/${id}/proof`, { proof_url });
+  uploadProof: async (id: string, file: File) => {
+    const formData = new FormData();
+    formData.append('proof', file);
+    const res = await apiClient.post<ApiResponse<WinnerClaim>>(`/winners/${id}/proof`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
     return res.data;
   },
   // Admin

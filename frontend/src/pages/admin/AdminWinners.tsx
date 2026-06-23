@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { Loader2, Gift, CheckCircle, XCircle, DollarSign, Clock, FileText } from 'lucide-react';
+import { Loader2, Gift, CheckCircle, XCircle, DollarSign, Clock, ExternalLink } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { winnersApi } from '../../features/draws/drawsApi';
 import { formatCurrency, formatDate, formatDrawMonth, getMatchLevelLabel } from '../../utils/formatters';
@@ -134,9 +134,20 @@ export default function AdminWinners() {
                       <Clock className="w-4 h-4" />Submitted {formatDate(claim.created_at)}
                     </span>
                     {claim.proof_url && (
-                      <a href={claim.proof_url} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-[#2563EB] hover:underline text-sm">
-                        <FileText className="w-4 h-4" /> View Proof
-                      </a>
+                      <div className="mt-3">
+                        <p className="text-xs text-ink-muted mb-1.5 uppercase tracking-wider font-medium">Proof</p>
+                        <a href={claim.proof_url} target="_blank" rel="noreferrer" className="group relative inline-block">
+                          <img
+                            src={claim.proof_url}
+                            alt="Winner proof"
+                            className="h-20 w-32 object-cover rounded-xl border border-border group-hover:border-brand transition-colors"
+                            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                          />
+                          <div className="absolute inset-0 rounded-xl bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                            <ExternalLink className="w-4 h-4 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                          </div>
+                        </a>
+                      </div>
                     )}
                   </div>
 
