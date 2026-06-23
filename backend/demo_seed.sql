@@ -231,57 +231,63 @@ ON CONFLICT (draw_month) DO NOTHING;
 -- ── 7. PRIZE POOLS ────────────────────────────────────────────────
 -- Distribute the prize pools for the published draws.
 
+WITH 
+  d1 AS (SELECT id FROM draws WHERE draw_month = date_trunc('month', CURRENT_DATE - INTERVAL '3 months')::date LIMIT 1),
+  d2 AS (SELECT id FROM draws WHERE draw_month = date_trunc('month', CURRENT_DATE - INTERVAL '2 months')::date LIMIT 1),
+  d3 AS (SELECT id FROM draws WHERE draw_month = date_trunc('month', CURRENT_DATE - INTERVAL '1 months')::date LIMIT 1)
 INSERT INTO prize_pools (draw_id, match_level, allocation_pct, pool_amount, winner_count, per_winner_amount, rolled_over)
 VALUES
   -- Draw 1
-  ('22222222-2222-4000-8000-000000000001', 'five_match', 50, 12500.00, 0, NULL, true),
-  ('22222222-2222-4000-8000-000000000001', 'four_match', 30, 7500.00, 5, 1500.00, false),
-  ('22222222-2222-4000-8000-000000000001', 'three_match', 20, 5000.00, 20, 250.00, false),
+  ((SELECT id FROM d1), 'five_match', 50, 12500.00, 0, NULL, true),
+  ((SELECT id FROM d1), 'four_match', 30, 7500.00, 5, 1500.00, false),
+  ((SELECT id FROM d1), 'three_match', 20, 5000.00, 20, 250.00, false),
   -- Draw 2
-  ('22222222-2222-4000-8000-000000000002', 'five_match', 50, 20500.00, 0, NULL, true), -- Includes rollover
-  ('22222222-2222-4000-8000-000000000002', 'four_match', 30, 9300.00, 3, 3100.00, false),
-  ('22222222-2222-4000-8000-000000000002', 'three_match', 20, 6200.00, 31, 200.00, false),
+  ((SELECT id FROM d2), 'five_match', 50, 20500.00, 0, NULL, true), -- Includes rollover
+  ((SELECT id FROM d2), 'four_match', 30, 9300.00, 3, 3100.00, false),
+  ((SELECT id FROM d2), 'three_match', 20, 6200.00, 31, 200.00, false),
   -- Draw 3
-  ('22222222-2222-4000-8000-000000000003', 'five_match', 50, 34750.00, 1, 34750.00, false), -- Includes double rollover
-  ('22222222-2222-4000-8000-000000000003', 'four_match', 30, 8550.00, 4, 2137.50, false),
-  ('22222222-2222-4000-8000-000000000003', 'three_match', 20, 5700.00, 25, 228.00, false)
+  ((SELECT id FROM d3), 'five_match', 50, 34750.00, 1, 34750.00, false), -- Includes double rollover
+  ((SELECT id FROM d3), 'four_match', 30, 8550.00, 4, 2137.50, false),
+  ((SELECT id FROM d3), 'three_match', 20, 5700.00, 25, 228.00, false)
 ON CONFLICT (draw_id, match_level) DO NOTHING;
 
 -- ── 8. DRAW ENTRIES ───────────────────────────────────────────────
 -- Add simulated entries for Draw 3 (Last Month)
 -- We will engineer the entries to match the winners
 
+WITH d3 AS (SELECT id FROM draws WHERE draw_month = date_trunc('month', CURRENT_DATE - INTERVAL '1 months')::date LIMIT 1)
 INSERT INTO draw_entries (id, draw_id, user_id, entry_numbers, match_level, match_count)
 VALUES
   -- 5 Match Winner (User 1)
-  ('33333333-3333-4000-8000-000000000001', '22222222-2222-4000-8000-000000000003', '11111111-1111-4000-8000-000000000001', ARRAY[3, 19, 25, 32, 40], 'five_match', 5),
+  ('33333333-3333-4000-8000-000000000001', (SELECT id FROM d3), '11111111-1111-4000-8000-000000000001', ARRAY[3, 19, 25, 32, 40], 'five_match', 5),
   -- 4 Match Winner (User 2)
-  ('33333333-3333-4000-8000-000000000002', '22222222-2222-4000-8000-000000000003', '11111111-1111-4000-8000-000000000002', ARRAY[3, 19, 25, 32, 41], 'four_match', 4),
+  ('33333333-3333-4000-8000-000000000002', (SELECT id FROM d3), '11111111-1111-4000-8000-000000000002', ARRAY[3, 19, 25, 32, 41], 'four_match', 4),
   -- 4 Match Winner (User 3)
-  ('33333333-3333-4000-8000-000000000003', '22222222-2222-4000-8000-000000000003', '11111111-1111-4000-8000-000000000003', ARRAY[3, 19, 25, 40, 42], 'four_match', 4),
+  ('33333333-3333-4000-8000-000000000003', (SELECT id FROM d3), '11111111-1111-4000-8000-000000000003', ARRAY[3, 19, 25, 40, 42], 'four_match', 4),
   -- 3 Match Winner (User 4)
-  ('33333333-3333-4000-8000-000000000004', '22222222-2222-4000-8000-000000000003', '11111111-1111-4000-8000-000000000004', ARRAY[3, 19, 25, 41, 42], 'three_match', 3),
+  ('33333333-3333-4000-8000-000000000004', (SELECT id FROM d3), '11111111-1111-4000-8000-000000000004', ARRAY[3, 19, 25, 41, 42], 'three_match', 3),
   -- 3 Match Winner (User 5)
-  ('33333333-3333-4000-8000-000000000005', '22222222-2222-4000-8000-000000000003', '11111111-1111-4000-8000-000000000005', ARRAY[19, 25, 32, 44, 45], 'three_match', 3),
+  ('33333333-3333-4000-8000-000000000005', (SELECT id FROM d3), '11111111-1111-4000-8000-000000000005', ARRAY[19, 25, 32, 44, 45], 'three_match', 3),
   -- Non-winner (User 6)
-  ('33333333-3333-4000-8000-000000000006', '22222222-2222-4000-8000-000000000003', '11111111-1111-4000-8000-000000000006', ARRAY[1, 2, 4, 6, 8], NULL, 0)
+  ('33333333-3333-4000-8000-000000000006', (SELECT id FROM d3), '11111111-1111-4000-8000-000000000006', ARRAY[1, 2, 4, 6, 8], NULL, 0)
 ON CONFLICT (draw_id, user_id) DO NOTHING;
 
 -- ── 9. WINNER CLAIMS ──────────────────────────────────────────────
 -- Create the claims for the winners above
 
+WITH d3 AS (SELECT id FROM draws WHERE draw_month = date_trunc('month', CURRENT_DATE - INTERVAL '1 months')::date LIMIT 1)
 INSERT INTO winner_claims (draw_id, user_id, draw_entry_id, match_level, prize_amount, claim_status, payment_status, admin_notes, created_at)
 VALUES
   -- User 1: 5 Match (Paid out)
-  ('22222222-2222-4000-8000-000000000003', '11111111-1111-4000-8000-000000000001', '33333333-3333-4000-8000-000000000001', 'five_match', 34750.00, 'approved', 'paid', 'Identity verified via passport.', NOW() - INTERVAL '20 days'),
+  ((SELECT id FROM d3), '11111111-1111-4000-8000-000000000001', '33333333-3333-4000-8000-000000000001', 'five_match', 34750.00, 'approved', 'paid', 'Identity verified via passport.', NOW() - INTERVAL '20 days'),
   -- User 2: 4 Match (Approved, awaiting payment)
-  ('22222222-2222-4000-8000-000000000003', '11111111-1111-4000-8000-000000000002', '33333333-3333-4000-8000-000000000002', 'four_match', 2137.50, 'approved', 'pending', 'Drivers license matched.', NOW() - INTERVAL '15 days'),
+  ((SELECT id FROM d3), '11111111-1111-4000-8000-000000000002', '33333333-3333-4000-8000-000000000002', 'four_match', 2137.50, 'approved', 'pending', 'Drivers license matched.', NOW() - INTERVAL '15 days'),
   -- User 3: 4 Match (Pending Review)
-  ('22222222-2222-4000-8000-000000000003', '11111111-1111-4000-8000-000000000003', '33333333-3333-4000-8000-000000000003', 'four_match', 2137.50, 'pending', 'pending', NULL, NOW() - INTERVAL '10 days'),
+  ((SELECT id FROM d3), '11111111-1111-4000-8000-000000000003', '33333333-3333-4000-8000-000000000003', 'four_match', 2137.50, 'pending', 'pending', NULL, NOW() - INTERVAL '10 days'),
   -- User 4: 3 Match (Paid out)
-  ('22222222-2222-4000-8000-000000000003', '11111111-1111-4000-8000-000000000004', '33333333-3333-4000-8000-000000000004', 'three_match', 228.00, 'approved', 'paid', 'Utility bill provided.', NOW() - INTERVAL '18 days'),
+  ((SELECT id FROM d3), '11111111-1111-4000-8000-000000000004', '33333333-3333-4000-8000-000000000004', 'three_match', 228.00, 'approved', 'paid', 'Utility bill provided.', NOW() - INTERVAL '18 days'),
   -- User 5: 3 Match (Rejected)
-  ('22222222-2222-4000-8000-000000000003', '11111111-1111-4000-8000-000000000005', '33333333-3333-4000-8000-000000000005', 'three_match', 228.00, 'rejected', 'pending', 'Name on ID does not match account name.', NOW() - INTERVAL '12 days')
+  ((SELECT id FROM d3), '11111111-1111-4000-8000-000000000005', '33333333-3333-4000-8000-000000000005', 'three_match', 228.00, 'rejected', 'pending', 'Name on ID does not match account name.', NOW() - INTERVAL '12 days')
 ON CONFLICT (draw_id, user_id, match_level) DO NOTHING;
 
 -- Update the paid/reviewed timestamps to make it realistic
