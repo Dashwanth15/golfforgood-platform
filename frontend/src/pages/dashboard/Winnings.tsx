@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { Award, Loader2, Upload, CheckCircle, Clock, XCircle, Trophy, ImageIcon, X } from 'lucide-react';
+import { Award, Loader2, Upload, CheckCircle, Clock, XCircle, Trophy, ImageIcon, X, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { winnersApi } from '../../features/draws/drawsApi';
 import { formatCurrency, formatDate, formatDrawMonth, getMatchLevelLabel } from '../../utils/formatters';
@@ -21,7 +21,9 @@ const claimColors: Record<string, string> = {
   rejected: 'text-danger bg-red-50',
 };
 
-function ClaimCard({ claim }: { claim: WinnerClaim }) {
+import { subscriptionApi } from '../../features/subscription/subscriptionApi';
+
+function ClaimCard({ claim, isInactive }: { claim: WinnerClaim; isInactive: boolean }) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [showUpload, setShowUpload] = useState(false);
@@ -218,7 +220,12 @@ function ClaimCard({ claim }: { claim: WinnerClaim }) {
             </div>
           ) : (
             /* Trigger button */
-            <button onClick={() => setShowUpload(true)} className="btn-secondary btn-sm w-full">
+            <button 
+              onClick={() => setShowUpload(true)} 
+              disabled={isInactive}
+              className="btn-secondary btn-sm w-full disabled:opacity-50 disabled:cursor-not-allowed"
+              title={isInactive ? "Active subscription required" : ""}
+            >
               <Upload className="w-3.5 h-3.5" /> Upload Proof of Identity
             </button>
           )}
@@ -237,6 +244,10 @@ export default function Winnings() {
   });
   const claims = res?.data ?? [];
 
+  const { data: subRes } = useQuery({ queryKey: ['my-subscription'], queryFn: () => subscriptionApi.getMySubscription() });
+  const sub = subRes?.data;
+  const isInactive = !sub || sub.status !== 'active';
+
   const totalWon = claims
     .filter(c => c.claim_status === 'approved')
     .reduce((sum, c) => sum + Number(c.prize_amount), 0);
@@ -247,6 +258,15 @@ export default function Winnings() {
         <h1 className="text-2xl font-bold text-ink">My Winnings</h1>
         <p className="text-ink-muted text-sm mt-1">Your prize claims and payment status</p>
       </div>
+
+      {isInactive && (
+        <div className="mb-6 p-4 rounded-2xl bg-amber-50 border border-amber-200 flex items-center gap-3">
+          <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0" />
+          <p className="text-sm text-amber-800">
+            You need an active subscription to upload proof for your claims.
+          </p>
+        </div>
+      )}
 
       {/* Total Won */}
       {totalWon > 0 && (
@@ -291,7 +311,7 @@ export default function Winnings() {
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {claims.map(c => <ClaimCard key={c.id} claim={c} />)}
+          {claims.map(c => <ClaimCard key={c.id} claim={c} isInactive={isInactive} />)}
         </div>
       )}
     </div>

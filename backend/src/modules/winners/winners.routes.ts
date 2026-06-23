@@ -34,10 +34,13 @@ router.get('/my', authenticate, async (req: AuthenticatedRequest, res: Response,
   } catch (err) { next(err); }
 });
 
+import { requireActiveSubscription } from '../../middleware/subscription.middleware';
+
 // ── Upload proof (real file upload to Supabase Storage) ──────────
 router.post(
   '/:id/proof',
   authenticate,
+  requireActiveSubscription,
   (req: Request, res: Response, next: NextFunction) => {
     upload.single('proof')(req, res, (err) => {
       if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') {

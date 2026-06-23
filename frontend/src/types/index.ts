@@ -150,6 +150,8 @@ export interface ApiResponse<T> {
 export interface Analytics {
   totalUsers: number;
   activeSubscriptions: number;
+  expiredSubscriptions: number;
+  cancelledSubscriptions: number;
   totalRevenue: string;
   totalCharities: number;
   pendingClaims: number;

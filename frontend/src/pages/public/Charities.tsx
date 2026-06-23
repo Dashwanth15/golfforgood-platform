@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { Search, Filter, Globe, Users, TrendingUp, Heart, ArrowRight, Loader2 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { charitiesApi } from '../../features/charities/charitiesApi';
+import { subscriptionApi } from '../../features/subscription/subscriptionApi';
 import { formatCurrency } from '../../utils/formatters';
 import type { Charity } from '../../types';
 
@@ -35,6 +36,13 @@ function CharityCard({ charity, index }: { charity: Charity; index: number }) {
   const [showDonate, setShowDonate] = useState(false);
   const [amount, setAmount] = useState<number | ''>('');
   const queryClient = useQueryClient();
+
+  const { data: subRes } = useQuery({ 
+    queryKey: ['my-subscription'], 
+    queryFn: () => subscriptionApi.getMySubscription(),
+    enabled: isAuthenticated 
+  });
+  const sub = subRes?.data;
 
   const donateMut = useMutation({
     mutationFn: () => charitiesApi.donate(charity.id, Number(amount)),
@@ -126,7 +134,12 @@ function CharityCard({ charity, index }: { charity: Charity; index: number }) {
               Support <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           ) : null}
-          <button onClick={handleDonateClick} className="btn-secondary btn-sm flex-1 bg-brand/10 text-brand hover:bg-brand/20 border-0">
+          <button 
+            onClick={handleDonateClick} 
+            disabled={isAuthenticated && (!sub || sub.status !== 'active')}
+            className="btn-secondary btn-sm flex-1 bg-brand/10 text-brand hover:bg-brand/20 border-0 disabled:opacity-50 disabled:cursor-not-allowed"
+            title={isAuthenticated && (!sub || sub.status !== 'active') ? 'Active subscription required to donate' : ''}
+          >
             <Heart className="w-3.5 h-3.5" /> Donate Now
           </button>
         </div>

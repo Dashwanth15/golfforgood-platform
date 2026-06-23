@@ -19,6 +19,18 @@ export class SubscriptionsService {
       .order('created_at', { ascending: false })
       .limit(1)
       .single();
+
+    if (data && data.status === 'active') {
+      const today = new Date().toISOString().split('T')[0];
+      if (today > data.end_date) {
+        data.status = 'expired';
+        await supabase
+          .from('subscriptions')
+          .update({ status: 'expired', updated_at: new Date().toISOString() })
+          .eq('id', data.id);
+      }
+    }
+
     return data;
   }
 
@@ -74,6 +86,15 @@ export class SubscriptionsService {
   }
 
   async getAllSubscriptions(page = 1, limit = 20) {
+    const today = new Date().toISOString().split('T')[0];
+    
+    // Auto-expire any subscriptions before fetching
+    await supabase
+      .from('subscriptions')
+      .update({ status: 'expired', updated_at: new Date().toISOString() })
+      .eq('status', 'active')
+      .lt('end_date', today);
+
     const from = (page - 1) * limit;
     const { data, count } = await supabase
       .from('subscriptions')

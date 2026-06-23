@@ -10,6 +10,13 @@ router.get('/analytics', authenticate, requireAdmin, async (req: Request, res: R
   try {
     const today = new Date().toISOString().split('T')[0];
 
+    // Auto-expire any subscriptions before fetching analytics
+    await supabase
+      .from('subscriptions')
+      .update({ status: 'expired', updated_at: new Date().toISOString() })
+      .eq('status', 'active')
+      .lt('end_date', today);
+
     const [
       { count: totalUsers },
       { count: activeSubscriptions },
@@ -18,14 +25,18 @@ router.get('/analytics', authenticate, requireAdmin, async (req: Request, res: R
       { count: pendingClaims },
       { data: draws },
       { count: totalDonations, data: donationsData },
+      { count: expiredSubscriptions },
+      { count: cancelledSubscriptions },
     ] = await Promise.all([
       supabase.from('users').select('*', { count: 'exact', head: true }).is('deleted_at', null),
-      supabase.from('subscriptions').select('*', { count: 'exact', head: true }).eq('status', 'active').gte('end_date', today),
-      supabase.from('subscriptions').select('plan:subscription_plans(price_amount)').eq('status', 'active').gte('end_date', today),
+      supabase.from('subscriptions').select('*', { count: 'exact', head: true }).eq('status', 'active'),
+      supabase.from('subscriptions').select('plan:subscription_plans(price_amount)').eq('status', 'active'),
       supabase.from('charities').select('*', { count: 'exact', head: true }).eq('is_active', true),
       supabase.from('winner_claims').select('*', { count: 'exact', head: true }).eq('claim_status', 'pending'),
       supabase.from('draws').select('total_revenue').eq('status', 'published'),
       supabase.from('donations').select('donation_amount', { count: 'exact' }),
+      supabase.from('subscriptions').select('*', { count: 'exact', head: true }).eq('status', 'expired'),
+      supabase.from('subscriptions').select('*', { count: 'exact', head: true }).eq('status', 'cancelled'),
     ]);
 
     // Calculate MRR and prize pool
@@ -36,6 +47,8 @@ router.get('/analytics', authenticate, requireAdmin, async (req: Request, res: R
     sendSuccess(res, {
       totalUsers,
       activeSubscriptions,
+      expiredSubscriptions,
+      cancelledSubscriptions,
       totalRevenue: totalRevenue.toFixed(2),
       totalCharities,
       pendingClaims,

@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { Users, CreditCard, Heart, Ticket, Gift, AlertCircle, Loader2, ArrowRight } from 'lucide-react';
+import { Users, CreditCard, Heart, Ticket, Gift, AlertCircle, Loader2, ArrowRight, XCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { adminApi } from '../../features/draws/drawsApi';
 
@@ -38,9 +38,11 @@ export default function AdminOverview() {
   const kpis = [
     { icon: Users,    label: 'Total Users',          value: stats?.totalUsers ?? 0,         color: 'bg-[#2563EB]', href: '/admin/users' },
     { icon: CreditCard, label: 'Active Subscriptions', value: stats?.activeSubscriptions ?? 0, color: 'bg-brand',     href: '/admin/subscriptions', sub: `£${stats?.totalRevenue ?? 0} MRR` },
+    { icon: AlertCircle, label: 'Expired Subscriptions', value: stats?.expiredSubscriptions ?? 0, color: 'bg-amber-500', href: '/admin/subscriptions' },
+    { icon: XCircle,  label: 'Cancelled Subscriptions', value: stats?.cancelledSubscriptions ?? 0, color: 'bg-danger', href: '/admin/subscriptions' },
     { icon: Heart,    label: 'Partner Charities',    value: stats?.totalCharities ?? 0,     color: 'bg-success',   href: '/admin/charities' },
     { icon: Ticket,   label: 'Total Prize Pool',     value: `£${stats?.totalPrizePool ?? 0}`, color: 'bg-gold',    href: '/admin/draws' },
-    { icon: Gift,     label: 'Pending Claims',       value: stats?.pendingClaims ?? 0,      color: 'bg-amber-500', href: '/admin/winners' },
+    { icon: Gift,     label: 'Pending Claims',       value: stats?.pendingClaims ?? 0,      color: 'bg-amber-600', href: '/admin/winners' },
     { icon: Heart,    label: 'Total Donations',      value: stats?.totalDonations ?? 0,     color: 'bg-[#047857]', href: '/admin/charities', sub: `£${stats?.totalDonatedAmount ?? 0} Donated` },
   ];
 

@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Edit2, Trash2, X, Save, Loader2, Target, Info } from 'lucide-react';
+import { Plus, Edit2, Trash2, X, Save, Loader2, Target, Info, AlertCircle } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import toast from 'react-hot-toast';
+import { Link } from 'react-router-dom';
 import { scoresApi } from '../../features/scores/scoresApi';
+import { subscriptionApi } from '../../features/subscription/subscriptionApi';
 import { formatDate } from '../../utils/formatters';
 import type { Score } from '../../types';
 const scoreSchema = z.object({
@@ -86,6 +88,10 @@ export default function Scores() {
 
   const isSubmitting = addMut.isPending || updateMut.isPending;
 
+  const { data: subRes } = useQuery({ queryKey: ['my-subscription'], queryFn: () => subscriptionApi.getMySubscription() });
+  const sub = subRes?.data;
+  const isInactive = !sub || sub.status !== 'active';
+
   return (
     <div>
       <div className="flex items-center justify-between mb-8">
@@ -94,11 +100,21 @@ export default function Scores() {
           <p className="text-ink-muted text-sm mt-1">Your latest 5 scores — they're your draw entry numbers</p>
         </div>
         {!showForm && (
-          <button onClick={() => setShowForm(true)} className="btn-primary btn-md">
+          <button onClick={() => setShowForm(true)} disabled={isInactive} className="btn-primary btn-md disabled:opacity-50 disabled:cursor-not-allowed">
             <Plus className="w-4 h-4" /> Add Score
           </button>
         )}
       </div>
+
+      {isInactive && (
+        <div className="mb-6 p-4 rounded-2xl bg-amber-50 border border-amber-200 flex items-center gap-3">
+          <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0" />
+          <p className="text-sm text-amber-800">
+            You need an active subscription to add scores. 
+            <Link to="/subscribe" className="font-semibold underline ml-1">Subscribe now</Link>
+          </p>
+        </div>
+      )}
 
       {/* Info banner */}
       <div className="card bg-brand/5 border-brand/20 border mb-6 flex items-start gap-3">

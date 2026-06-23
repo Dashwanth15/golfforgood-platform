@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { Heart, CheckCircle, Loader2, Users, TrendingUp, Sparkles } from 'lucide-react';
+import { Heart, CheckCircle, Loader2, Users, TrendingUp, Sparkles, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { charitiesApi } from '../../features/charities/charitiesApi';
+import { subscriptionApi } from '../../features/subscription/subscriptionApi';
 import type { Charity } from '../../types';
 import { formatCurrency } from '../../utils/formatters';
 
@@ -29,9 +30,12 @@ export default function MyCharity() {
     queryKey: ['my-charity-selection'],
     queryFn: charitiesApi.getMySelection,
   });
+  const { data: subRes } = useQuery({ queryKey: ['my-subscription'], queryFn: () => subscriptionApi.getMySubscription() });
 
   const charities = charitiesRes?.data ?? [];
   const currentSelection = selectionRes?.data;
+  const sub = subRes?.data;
+  const isInactive = !sub || sub.status !== 'active';
 
   const saveMut = useMutation({
     mutationFn: () => charitiesApi.setMySelection({ charity_id: selected!.id, contribution_pct: pct }),
@@ -58,6 +62,15 @@ export default function MyCharity() {
         <h1 className="text-2xl font-bold text-ink">My Charity</h1>
         <p className="text-ink-muted text-sm mt-1">Choose the cause your subscription supports</p>
       </div>
+
+      {isInactive && (
+        <div className="mb-6 p-4 rounded-2xl bg-amber-50 border border-amber-200 flex items-center gap-3">
+          <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0" />
+          <p className="text-sm text-amber-800">
+            You need an active subscription to save your charity selection.
+          </p>
+        </div>
+      )}
 
       {/* Current Selection */}
       {currentSelection && (
@@ -192,8 +205,8 @@ export default function MyCharity() {
 
             <button
               onClick={handleSave}
-              disabled={!selected || saveMut.isPending}
-              className="btn-primary btn-md w-full"
+              disabled={!selected || saveMut.isPending || isInactive}
+              className="btn-primary btn-md w-full disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {saveMut.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Heart className="w-4 h-4" />}
               {currentSelection ? 'Update Selection' : 'Save Selection'}

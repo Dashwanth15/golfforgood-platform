@@ -52,14 +52,14 @@ export default function DashboardOverview() {
       </div>
 
       {/* Subscription Alert */}
-      {!sub && (
+      {(!sub || sub.status !== 'active') && (
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
           className="mb-6 p-4 rounded-2xl bg-amber-50 border border-amber-200 flex items-center gap-3"
         >
           <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0" />
           <p className="text-sm text-amber-800">
-            You don't have an active subscription.{' '}
-            <Link to="/subscribe" className="font-semibold underline">Subscribe now</Link> to participate in draws.
+            {sub ? 'Your subscription is inactive. ' : "You don't have an active subscription. "}
+            <Link to="/subscribe" className="font-semibold underline">Subscribe now</Link> to participate in draws and donate.
           </p>
         </motion.div>
       )}
@@ -67,9 +67,10 @@ export default function DashboardOverview() {
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <KPICard
-          icon={CheckCircle} label="Subscription" color="bg-success"
+          icon={CheckCircle} label="Subscription" 
+          color={!sub ? 'bg-border' : sub.status === 'active' ? 'bg-success' : sub.status === 'expired' ? 'bg-amber-500' : 'bg-danger'}
           value={sub ? sub.status.toUpperCase() : 'NONE'}
-          sub={sub ? `Renews ${formatDate(sub.renewal_date ?? sub.end_date)}` : 'No active plan'}
+          sub={sub ? `${sub.status === 'active' ? 'Renews' : 'Ended'} ${formatDate(sub.renewal_date ?? sub.end_date)}` : 'No active plan'}
           href="/subscribe"
         />
         <KPICard
