@@ -5,7 +5,7 @@ import { CheckCircle, Loader2, CreditCard, Lock, Trophy, Zap } from 'lucide-reac
 import toast from 'react-hot-toast';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { subscriptionApi } from '../../features/subscription/subscriptionApi';
-import { formatCurrency } from '../../utils/formatters';
+import { formatCurrency, formatDate } from '../../utils/formatters';
 import type { SubscriptionPlan } from '../../types';
 
 export default function Subscribe() {
@@ -18,6 +18,13 @@ export default function Subscribe() {
     queryFn: subscriptionApi.getPlans,
   });
   const plans = plansRes?.data ?? [];
+
+  const { data: subRes } = useQuery({
+    queryKey: ['my-subscription'],
+    queryFn: subscriptionApi.getMySubscription,
+  });
+  const currentSub = subRes?.data;
+  const isActive = currentSub?.status === 'active';
 
   const purchaseMut = useMutation({
     mutationFn: (planId: string) => subscriptionApi.purchase(planId),
@@ -32,7 +39,21 @@ export default function Subscribe() {
 
   const handleProceed = () => {
     if (!selectedPlan) { toast.error('Please select a plan'); return; }
+    if (isActive && selectedPlan === currentSub.plan_id) {
+      toast.error('You are already on this plan');
+      return;
+    }
     setStep('payment');
+  };
+
+  const getContinueText = () => {
+    if (!isActive) return 'Continue to Payment';
+    if (selectedPlan === currentSub.plan_id) return 'Current Plan Selected';
+    const targetPlan = plans.find((p: SubscriptionPlan) => p.id === selectedPlan);
+    if (!targetPlan) return 'Continue to Payment';
+    if (currentSub.plan?.plan_type === 'monthly' && targetPlan.plan_type === 'yearly') return 'Upgrade to Yearly';
+    if (currentSub.plan?.plan_type === 'yearly' && targetPlan.plan_type === 'monthly') return 'Switch to Monthly';
+    return 'Change Plan';
   };
 
   const handleMockPayment = () => {
@@ -67,10 +88,10 @@ export default function Subscribe() {
         <div className="text-center mb-12">
           <Trophy className="w-10 h-10 text-brand mx-auto mb-4" />
           <h1 className="text-3xl font-bold text-ink mb-3">
-            {step === 'plan' ? 'Choose Your Plan' : 'Complete Your Subscription'}
+            {step === 'plan' ? (isActive ? 'Manage Subscription' : 'Choose Your Plan') : 'Complete Your Subscription'}
           </h1>
           <p className="text-ink-muted">
-            {step === 'plan' ? 'Start playing for good today' : 'Mock payment — no real charge'}
+            {step === 'plan' ? (isActive ? 'View your current plan or upgrade' : 'Start playing for good today') : 'Mock payment — no real charge'}
           </p>
         </div>
 
@@ -79,7 +100,40 @@ export default function Subscribe() {
             {isLoading ? (
               <div className="flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-brand" /></div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+              <>
+                {isActive && currentSub.plan && (
+                  <div className="mb-8">
+                    <h2 className="text-xl font-bold text-ink mb-4">Current Plan</h2>
+                    <div className="card border-2 border-brand/20 bg-brand/5 relative overflow-hidden">
+                      <div className="absolute top-0 right-0 p-4">
+                        <span className="badge badge-success flex items-center gap-1">
+                          <CheckCircle className="w-3.5 h-3.5" /> Active Subscription
+                        </span>
+                      </div>
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-6">
+                        <div>
+                          <p className="text-sm text-ink-muted font-medium mb-1">Status</p>
+                          <p className="font-bold text-ink capitalize">{currentSub.status}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-ink-muted font-medium mb-1">Plan</p>
+                          <p className="font-bold text-ink">{currentSub.plan.name}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-ink-muted font-medium mb-1">Start Date</p>
+                          <p className="font-bold text-ink">{formatDate(currentSub.start_date)}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-ink-muted font-medium mb-1">Renewal Date</p>
+                          <p className="font-bold text-ink">{formatDate(currentSub.renewal_date || currentSub.end_date)}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                {isActive && <h2 className="text-xl font-bold text-ink mb-4">Upgrade Plan</h2>}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                 {plans.map((plan: SubscriptionPlan) => (
                   <button
                     key={plan.id}
@@ -118,10 +172,15 @@ export default function Subscribe() {
                   </button>
                 ))}
               </div>
+              <button 
+                onClick={handleProceed} 
+                className={`btn-lg w-full max-w-sm mx-auto flex justify-center ${isActive && selectedPlan === currentSub?.plan_id ? 'bg-border text-ink-muted cursor-not-allowed' : 'btn-primary'}`}
+                disabled={isActive && selectedPlan === currentSub?.plan_id}
+              >
+                {getContinueText()}
+              </button>
+              </>
             )}
-            <button onClick={handleProceed} className="btn-primary btn-lg w-full max-w-sm mx-auto flex">
-              Continue to Payment
-            </button>
           </motion.div>
         )}
 
