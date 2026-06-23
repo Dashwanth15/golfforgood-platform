@@ -2,7 +2,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 
 import {
   Trophy, LayoutDashboard, Target, Heart, Ticket, Award,
-  Users, Gift, Settings, BarChart3, LogOut, X, Shield, User
+  Users, Gift, Settings, BarChart3, LogOut, X, Shield, User, CreditCard
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 
@@ -22,6 +22,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
     { icon: Gift, label: 'Donations', href: '/dashboard/donations' },
     { icon: Ticket, label: 'Draws', href: '/dashboard/draws' },
     { icon: Award, label: 'Winnings', href: '/dashboard/winnings' },
+    { icon: CreditCard, label: 'Manage Subscription', href: '/subscribe' },
     { icon: User, label: 'Profile Settings', href: '/dashboard/profile' },
   ];
 
