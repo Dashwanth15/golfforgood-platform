@@ -9,6 +9,7 @@ import toast from 'react-hot-toast';
 import { authApi } from '../../features/auth/authApi';
 import { useAuthStore } from '../../store/authStore';
 import { supabase } from '../../lib/supabase';
+import AuthHero from '../../components/auth/AuthHero';
 
 const schema = z.object({
   full_name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -74,34 +75,19 @@ export default function Register() {
 
   return (
     <div className="min-h-screen grid grid-cols-1 md:grid-cols-2 pt-16">
-      {/* Left — Brand */}
-      <div className="hidden md:flex flex-col justify-between bg-hero-gradient p-12 text-white">
-        <Link to="/" className="flex items-center gap-2">
-          <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center">
-            <Trophy className="w-5 h-5" />
+      {/* Left — Brand & Hero */}
+      <AuthHero 
+        title="Join the Movement."
+        description="Golf meets generosity. Every round you play supports a cause that matters."
+        icon={<Heart className="w-10 h-10 text-gold" />}
+      >
+        {benefits.map(b => (
+          <div key={b} className="flex items-start gap-3">
+            <CheckCircle className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
+            <span className="text-white/90 text-sm font-medium">{b}</span>
           </div>
-          <span className="font-bold text-xl">GolfForGood</span>
-        </Link>
-
-        <div>
-          <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}>
-            <Heart className="w-10 h-10 text-gold mb-6" />
-            <h2 className="text-4xl font-bold mb-4">Join the Movement.</h2>
-            <p className="text-white/70 text-lg mb-8">
-              Golf meets generosity. Every round you play supports a cause that matters.
-            </p>
-            <div className="space-y-3">
-              {benefits.map(b => (
-                <div key={b} className="flex items-start gap-3">
-                  <CheckCircle className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
-                  <span className="text-white/80 text-sm">{b}</span>
-                </div>
-              ))}
-            </div>
-          </motion.div>
-        </div>
-        <div className="text-white/40 text-sm">© 2026 GolfForGood</div>
-      </div>
+        ))}
+      </AuthHero>
 
       {/* Right — Form */}
       <div className="flex items-center justify-center p-8 bg-surface">

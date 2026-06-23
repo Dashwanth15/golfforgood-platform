@@ -9,6 +9,7 @@ import toast from 'react-hot-toast';
 import { authApi } from '../../features/auth/authApi';
 import { useAuthStore } from '../../store/authStore';
 import { supabase } from '../../lib/supabase';
+import AuthHero from '../../components/auth/AuthHero';
 
 const schema = z.object({
   email: z.string().email('Enter a valid email'),
@@ -58,32 +59,11 @@ export default function Login() {
 
   return (
     <div className="min-h-screen grid grid-cols-1 md:grid-cols-2 pt-16">
-      {/* Left — Brand */}
-      <div className="hidden md:flex flex-col justify-between bg-hero-gradient p-12 text-white">
-        <Link to="/" className="flex items-center gap-2">
-          <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center">
-            <Trophy className="w-5 h-5 text-white" />
-          </div>
-          <span className="font-bold text-xl">GolfForGood</span>
-        </Link>
-
-        <div>
-          <motion.h2
-            initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}
-            className="text-4xl font-bold mb-4"
-          >
-            Welcome Back,<br />Champion.
-          </motion.h2>
-          <motion.p
-            initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 }}
-            className="text-white/70 text-lg"
-          >
-            Your scores are waiting. Your draw entry is ready. And somewhere, a charity is counting on you.
-          </motion.p>
-        </div>
-
-        <div className="text-white/40 text-sm">© 2026 GolfForGood</div>
-      </div>
+      {/* Left — Brand & Hero */}
+      <AuthHero 
+        title={<>Welcome Back,<br />Champion.</>}
+        description="Your scores are waiting. Your draw entry is ready. And somewhere, a charity is counting on you."
+      />
 
       {/* Right — Form */}
       <div className="flex items-center justify-center p-8 bg-surface">
