@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Trophy } from 'lucide-react';
+import golfHero from '../../assets/golf.png';
 
 interface AuthHeroProps {
   title: ReactNode;
@@ -21,7 +22,7 @@ export default function AuthHero({ title, description, icon, children }: AuthHer
       */}
       <div className="absolute inset-x-0 bottom-0 top-1/4 z-0">
         <img 
-          src="/images/golfforgood-auth-hero.png" 
+          src={golfHero} 
           alt="Golf background" 
           className="w-full h-full object-cover object-bottom opacity-90"
         />
