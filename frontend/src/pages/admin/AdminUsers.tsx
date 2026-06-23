@@ -200,7 +200,8 @@ export default function AdminUsers() {
             value={search}
             onChange={e => { setSearch(e.target.value); setPage(1); }}
             placeholder="Search by name or email..."
-            className="input pl-9"
+            className="input"
+            style={{ paddingLeft: '2.5rem' }}
           />
         </div>
       </div>

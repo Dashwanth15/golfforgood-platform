@@ -118,7 +118,8 @@ export default function Profile() {
                 <input
                   {...register('avatar_url')}
                   placeholder="https://example.com/avatar.jpg"
-                  className={`input !pl-9 ${errors.avatar_url ? 'input-error' : ''}`}
+                  className={`input ${errors.avatar_url ? 'input-error' : ''}`}
+                  style={{ paddingLeft: '2.5rem' }}
                 />
               </div>
               {errors.avatar_url && <p className="form-error">{errors.avatar_url.message}</p>}

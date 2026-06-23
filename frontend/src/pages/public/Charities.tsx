@@ -254,10 +254,12 @@ export default function Charities() {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-muted" />
               <input
+                type="text"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder="Search charities..."
-                className="input pl-9"
+                className="input"
+                style={{ paddingLeft: '2.5rem' }}
               />
             </div>
             <div className="flex items-center gap-2 overflow-x-auto pb-1">

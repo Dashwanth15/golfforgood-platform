@@ -48,7 +48,7 @@ export default function AdminSubscriptions() {
       <div className="card mb-6">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-muted" />
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by subscriber name or email..." className="input pl-9" />
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by subscriber name or email..." className="input" style={{ paddingLeft: '2.5rem' }} />
         </div>
       </div>
 
