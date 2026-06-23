@@ -78,6 +78,13 @@ VALUES
 ON CONFLICT (user_id, score_date) DO NOTHING;
 
 -- 7. DRAWS
+-- Clean up any existing manual draws for these months to prevent foreign key errors with our specific seed UUIDs.
+DELETE FROM draws WHERE draw_month IN (
+  DATE_TRUNC('month', CURRENT_DATE - INTERVAL '2 months')::date,
+  DATE_TRUNC('month', CURRENT_DATE - INTERVAL '1 month')::date,
+  DATE_TRUNC('month', CURRENT_DATE)::date
+);
+
 -- Draw 1: Completed 2 months ago
 -- Draw 2: Completed 1 month ago
 -- Draw 3: Upcoming (Current month)
