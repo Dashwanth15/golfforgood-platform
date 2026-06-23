@@ -60,10 +60,7 @@ export default function Login() {
   return (
     <div className="min-h-screen grid grid-cols-1 md:grid-cols-2 pt-16">
       {/* Left — Brand & Hero */}
-      <AuthHero 
-        title={<>Welcome Back,<br />Champion.</>}
-        description="Your scores are waiting. Your draw entry is ready. And somewhere, a charity is counting on you."
-      />
+      <AuthHero />
 
       {/* Right — Form */}
       <div className="flex items-center justify-center p-8 bg-surface">

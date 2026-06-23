@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { motion } from 'framer-motion';
-import { Trophy, Eye, EyeOff, ArrowRight, Loader2, CheckCircle, Heart } from 'lucide-react';
+import { Trophy, Eye, EyeOff, ArrowRight, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { authApi } from '../../features/auth/authApi';
 import { useAuthStore } from '../../store/authStore';
@@ -66,28 +66,11 @@ export default function Register() {
     }
   };
 
-  const benefits = [
-    'Golf score tracking with rolling 5-score window',
-    'Monthly draw participation — real jackpots',
-    'Choose your charity — 10%+ contribution guaranteed',
-    'Dashboard with full performance analytics',
-  ];
 
   return (
     <div className="min-h-screen grid grid-cols-1 md:grid-cols-2 pt-16">
       {/* Left — Brand & Hero */}
-      <AuthHero 
-        title="Join the Movement."
-        description="Golf meets generosity. Every round you play supports a cause that matters."
-        icon={<Heart className="w-10 h-10 text-gold" />}
-      >
-        {benefits.map(b => (
-          <div key={b} className="flex items-start gap-3">
-            <CheckCircle className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
-            <span className="text-white/90 text-sm font-medium">{b}</span>
-          </div>
-        ))}
-      </AuthHero>
+      <AuthHero />
 
       {/* Right — Form */}
       <div className="flex items-center justify-center p-8 bg-surface">
