@@ -14,17 +14,17 @@
 
 -- Update donations to point to canonical IDs
 WITH canonical_charities AS (SELECT name, MIN(created_at) as first_created FROM charities GROUP BY name),
-canonical_ids AS (SELECT c.id as canonical_id, c.name FROM charities c JOIN canonical_charities cc ON c.name = cc.name AND c.created_at = cc.first_created DISTINCT ON (c.name))
+canonical_ids AS (SELECT DISTINCT ON (c.name) c.id as canonical_id, c.name FROM charities c JOIN canonical_charities cc ON c.name = cc.name AND c.created_at = cc.first_created)
 UPDATE donations d SET charity_id = ci.canonical_id FROM charities c JOIN canonical_ids ci ON c.name = ci.name WHERE d.charity_id = c.id AND c.id != ci.canonical_id;
 
 -- Update user selections to point to canonical IDs
 WITH canonical_charities AS (SELECT name, MIN(created_at) as first_created FROM charities GROUP BY name),
-canonical_ids AS (SELECT c.id as canonical_id, c.name FROM charities c JOIN canonical_charities cc ON c.name = cc.name AND c.created_at = cc.first_created DISTINCT ON (c.name))
+canonical_ids AS (SELECT DISTINCT ON (c.name) c.id as canonical_id, c.name FROM charities c JOIN canonical_charities cc ON c.name = cc.name AND c.created_at = cc.first_created)
 UPDATE user_charity_selections ucs SET charity_id = ci.canonical_id FROM charities c JOIN canonical_ids ci ON c.name = ci.name WHERE ucs.charity_id = c.id AND c.id != ci.canonical_id;
 
 -- Delete the duplicates now that foreign keys are migrated
 WITH canonical_charities AS (SELECT name, MIN(created_at) as first_created FROM charities GROUP BY name),
-canonical_ids AS (SELECT c.id as canonical_id, c.name FROM charities c JOIN canonical_charities cc ON c.name = cc.name AND c.created_at = cc.first_created DISTINCT ON (c.name))
+canonical_ids AS (SELECT DISTINCT ON (c.name) c.id as canonical_id, c.name FROM charities c JOIN canonical_charities cc ON c.name = cc.name AND c.created_at = cc.first_created)
 DELETE FROM charities c WHERE NOT EXISTS (SELECT 1 FROM canonical_ids ci WHERE ci.canonical_id = c.id);
 
 -- Add UNIQUE constraint to prevent future duplication
