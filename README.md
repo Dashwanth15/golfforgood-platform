@@ -42,6 +42,57 @@ GolfForGood is a full-stack SaaS platform where golfers subscribe, submit their 
 
 ---
 
+## 📸 Screenshots
+
+### 🏠 Landing Page
+
+![Landing Page](./frontend/src/assets/landing%20page.png)
+
+Public marketing page showcasing the GolfForGood concept, subscription plans, and call-to-action.
+
+---
+
+### 📊 User Dashboard
+
+![User Dashboard](./frontend/src/assets/user%20dashboard.png)
+
+Personalised subscriber dashboard with KPI cards for subscription status, scores, draws, and charity contributions.
+
+---
+
+### ⛳ Golf Score Tracking
+
+![Golf Scores](./frontend/src/assets/golf.png)
+
+Golf score submission interface with rolling 5-score window — each score becomes a monthly draw entry number.
+
+---
+
+### 🏥 Charity Selection
+
+![Charity Selection](./frontend/src/assets/charity%20selection.png)
+
+Charity directory with category filters, featured listings, and contribution percentage settings.
+
+---
+
+### 💳 Subscription & Stripe Checkout
+
+![Subscription Page](./frontend/src/assets/subscription%20page.png)
+
+Plan selection and Stripe-hosted checkout flow — monthly and yearly subscriptions with automatic activation.
+
+---
+
+### ⚙️ Admin Dashboard
+
+![Admin Dashboard](./frontend/src/assets/admin%20dashboard.png)
+
+Full back-office management: user control, draw administration, winner claims, charity management, and platform analytics.
+
+---
+
+
 ## ✨ Key Features
 
 ### 🔐 Authentication
@@ -105,20 +156,6 @@ GolfForGood is a full-stack SaaS platform where golfers subscribe, submit their 
 - Winner alert emails
 - Claim approval and rejection emails
 - Powered by Resend — non-blocking architecture
-
----
-
-## 📸 Screenshots
-
-| Page | Description |
-|------|-------------|
-| 🏠 Landing Page | Public marketing page with pricing and features |
-| 📊 User Dashboard | KPI overview, scores, draws, charity status |
-| 🏥 Charity Selection | Browse and select a charity with contribution settings |
-| 💳 Subscribe Page | Plan selection and Stripe Checkout flow |
-| ⚙️ Admin Dashboard | Full platform management and analytics |
-
-> *Live at [golfforgood-platform.onrender.com](https://golfforgood-platform.onrender.com)*
 
 ---
 
