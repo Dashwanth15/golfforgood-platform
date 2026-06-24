@@ -3,7 +3,7 @@ import { useRef, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Trophy, Heart, ArrowRight, CheckCircle, Star,
-  Users, TrendingUp, Award, Play, ChevronRight, Sparkles
+  Users, TrendingUp, Award, ArrowDown, ChevronRight, Sparkles
 } from 'lucide-react';
 
 // ── Animated Counter ──────────────────────────────────────────────
@@ -134,10 +134,17 @@ export default function Landing() {
               Start Playing for Good
               <ArrowRight className="w-5 h-5" />
             </Link>
-            <Link to="/#how-it-works" className="btn-lg border-2 border-white/40 text-white hover:bg-white/10 backdrop-blur-sm">
-              <Play className="w-4 h-4" />
+            <a 
+              href="#how-it-works" 
+              onClick={(e) => {
+                e.preventDefault();
+                document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className="btn-lg border-2 border-white/40 text-white hover:bg-white/10 backdrop-blur-sm"
+            >
+              <ArrowDown className="w-4 h-4" />
               How It Works
-            </Link>
+            </a>
           </motion.div>
 
           {/* Trust badges */}
