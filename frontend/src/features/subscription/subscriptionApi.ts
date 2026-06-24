@@ -14,6 +14,10 @@ export const subscriptionApi = {
     const res = await apiClient.post<ApiResponse<Subscription>>('/subscriptions', { plan_id });
     return res.data;
   },
+  createCheckoutSession: async (plan_id: string) => {
+    const res = await apiClient.post<{ success: boolean; stripeEnabled?: boolean; url?: string; message?: string }>('/payments/create-checkout-session', { plan_id });
+    return res.data;
+  },
   cancel: async (id: string) => {
     const res = await apiClient.patch<ApiResponse<Subscription>>(`/subscriptions/${id}/cancel`);
     return res.data;

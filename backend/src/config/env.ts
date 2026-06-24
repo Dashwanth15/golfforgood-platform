@@ -22,4 +22,7 @@ export const envConfig = {
   FRONTEND_URL:           process.env.FRONTEND_URL ?? 'http://localhost:5173',
   RESEND_API_KEY:         required('RESEND_API_KEY'),
   EMAIL_FROM:             process.env.EMAIL_FROM ?? 'onboarding@resend.dev',
+  STRIPE_SECRET_KEY:      process.env.STRIPE_SECRET_KEY ?? '',
+  STRIPE_ENABLED:         process.env.STRIPE_ENABLED ?? 'false',
+  STRIPE_WEBHOOK_SECRET:  process.env.STRIPE_WEBHOOK_SECRET ?? '',
 };

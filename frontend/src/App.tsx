@@ -13,6 +13,8 @@ import Landing from './pages/public/Landing';
 import Login from './pages/public/Login';
 import Register from './pages/public/Register';
 import Subscribe from './pages/public/Subscribe';
+import SubscribeSuccess from './pages/public/SubscribeSuccess';
+import SubscribeCancel from './pages/public/SubscribeCancel';
 import Charities from './pages/public/Charities';
 import AuthCallback from './pages/public/AuthCallback';
 
@@ -76,6 +78,8 @@ export default function App() {
               {/* Requires auth */}
               <Route element={<ProtectedRoute />}>
                 <Route path="/subscribe" element={<Subscribe />} />
+                <Route path="/subscribe/success" element={<SubscribeSuccess />} />
+                <Route path="/subscribe/cancel" element={<SubscribeCancel />} />
               </Route>
             </Route>
 

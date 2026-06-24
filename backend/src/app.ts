@@ -12,6 +12,7 @@ import charitiesRoutes   from './modules/charities/charities.routes';
 import drawsRoutes       from './modules/draws/draws.routes';
 import winnersRoutes     from './modules/winners/winners.routes';
 import subscriptionsRoutes from './modules/subscriptions/subscriptions.routes';
+import paymentsRoutes    from './modules/payments/payments.routes';
 import adminRoutes       from './modules/admin/admin.routes';
 import profileRoutes     from './modules/profile/profile.routes';
 
@@ -25,11 +26,25 @@ app.use(cors({
   origin: [envConfig.FRONTEND_URL, 'http://localhost:5173'],
   credentials: true,
   methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Stripe-Signature'],
 }));
 app.use(morgan('dev'));
-app.use(express.json({ limit: '5mb' }));
-app.use(express.urlencoded({ extended: true }));
+
+// Conditionally parse JSON (skip for Stripe Webhook so it gets raw Buffer)
+app.use((req, res, next) => {
+  if (req.originalUrl === '/api/payments/webhook') {
+    next();
+  } else {
+    express.json({ limit: '5mb' })(req, res, next);
+  }
+});
+app.use((req, res, next) => {
+  if (req.originalUrl === '/api/payments/webhook') {
+    next();
+  } else {
+    express.urlencoded({ extended: true })(req, res, next);
+  }
+});
 
 // ── Health Check ──────────────────────────────────────────────────
 app.get('/api/health', async (_req, res) => {
@@ -63,6 +78,7 @@ app.use('/api/charities',     charitiesRoutes);
 app.use('/api/draws',         drawsRoutes);
 app.use('/api/winners',       winnersRoutes);
 app.use('/api/subscriptions', subscriptionsRoutes);
+app.use('/api/payments',      paymentsRoutes);
 app.use('/api/admin',         adminRoutes);
 app.use('/api/profile',       profileRoutes);
 

@@ -27,13 +27,23 @@ export default function Subscribe() {
   const isActive = currentSub?.status === 'active';
 
   const purchaseMut = useMutation({
-    mutationFn: (planId: string) => subscriptionApi.purchase(planId),
-    onSuccess: () => {
-      setStep('success');
-      setTimeout(() => navigate('/dashboard'), 2500);
+    mutationFn: (planId: string) => subscriptionApi.createCheckoutSession(planId),
+    onSuccess: (data) => {
+      if (data.stripeEnabled && data.url) {
+        window.location.href = data.url;
+      } else {
+        // Fallback to mock behavior if Stripe is disabled
+        const mockPurchase = subscriptionApi.purchase(selectedPlan!);
+        mockPurchase.then(() => {
+          setStep('success');
+          setTimeout(() => navigate('/dashboard'), 2500);
+        }).catch((err) => {
+          toast.error(err.response?.data?.message || 'Purchase failed');
+        });
+      }
     },
     onError: (err: any) => {
-      toast.error(err.response?.data?.message || 'Purchase failed');
+      toast.error(err.response?.data?.message || 'Payment initiation failed');
     },
   });
 
@@ -56,7 +66,7 @@ export default function Subscribe() {
     return 'Change Plan';
   };
 
-  const handleMockPayment = () => {
+  const handlePayment = () => {
     if (!selectedPlan) return;
     purchaseMut.mutate(selectedPlan);
   };
@@ -222,7 +232,7 @@ export default function Subscribe() {
             </div>
 
             <button
-              onClick={handleMockPayment}
+              onClick={handlePayment}
               disabled={purchaseMut.isPending}
               className="btn-primary btn-lg w-full"
             >
