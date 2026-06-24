@@ -73,9 +73,7 @@ This README documents the complete architecture, engineering decisions, data mod
 
 ## 🚀 Live Demo
 
-> 🌐 **Frontend:** [https://golfforgood-frontend.onrender.com](https://golfforgood-frontend.onrender.com)
->
-> ⚙️ **Backend API:** [https://golfforgood-backend.onrender.com](https://golfforgood-backend.onrender.com)
+> 🌐 **Live Demo:** [https://golfforgood-platform.onrender.com](https://golfforgood-platform.onrender.com)
 
 ### 🔑 Test Credentials
 
