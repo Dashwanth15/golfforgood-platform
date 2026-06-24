@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Menu } from 'lucide-react';
@@ -20,6 +20,15 @@ export function PublicLayout() {
 
 export function DashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    if (sidebarOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => { document.body.style.overflow = 'unset'; };
+  }, [sidebarOpen]);
 
   return (
     <div className="flex h-screen bg-surface overflow-hidden">

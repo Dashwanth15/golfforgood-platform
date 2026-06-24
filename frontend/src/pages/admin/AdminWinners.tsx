@@ -169,7 +169,7 @@ export default function AdminWinners() {
                 </div>
 
                 {/* Actions */}
-                <div className="flex flex-row lg:flex-col gap-2 lg:items-end justify-start">
+                <div className="flex flex-wrap lg:flex-col gap-2 lg:items-end justify-start">
                   {claim.claim_status === 'pending' && (
                     <>
                       <button

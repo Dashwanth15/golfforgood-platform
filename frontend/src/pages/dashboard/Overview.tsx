@@ -11,15 +11,15 @@ import { formatDate } from '../../utils/formatters';
 
 function KPICard({ icon: Icon, label, value, sub, color, href }: any) {
   return (
-    <motion.div whileHover={{ y: -2 }} transition={{ duration: 0.2 }}>
-      <Link to={href} className="card flex items-start gap-4 hover:shadow-elevated transition-all duration-300 group block">
+    <motion.div whileHover={{ y: -2 }} transition={{ duration: 0.2 }} className="h-full">
+      <Link to={href} className="card h-full flex items-start gap-4 hover:shadow-elevated transition-all duration-300 group block">
         <div className={`w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 ${color}`}>
           <Icon className="w-6 h-6 text-white" />
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm text-ink-muted mb-1">{label}</p>
-          <p className="text-2xl font-bold text-ink truncate">{value}</p>
-          {sub && <p className="text-xs text-ink-muted mt-1">{sub}</p>}
+          <p className="text-2xl font-bold text-ink break-words">{value}</p>
+          {sub && <p className="text-xs text-ink-muted mt-1 leading-snug">{sub}</p>}
         </div>
         <ArrowRight className="w-4 h-4 text-border group-hover:text-brand group-hover:translate-x-1 transition-all flex-shrink-0 mt-1" />
       </Link>
@@ -113,7 +113,7 @@ export default function DashboardOverview() {
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: i * 0.05 }}
-                  className="flex items-center gap-3"
+                  className="flex flex-wrap sm:flex-nowrap items-center gap-3"
                 >
                   <div className="w-10 h-10 rounded-xl bg-brand/10 flex items-center justify-center font-bold text-brand">
                     {score.score_value}
@@ -149,7 +149,7 @@ export default function DashboardOverview() {
 
           {scores.length > 0 ? (
             <>
-              <div className="flex flex-wrap gap-3 mb-6">
+              <div className="flex flex-wrap gap-2 sm:gap-3 mb-6">
                 {scores.map((score, i) => (
                   <motion.div
                     key={score.id}

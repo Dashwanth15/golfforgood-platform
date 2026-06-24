@@ -128,11 +128,13 @@ function UserDetailView({ user, onBack }: { user: User; onBack: () => void }) {
             {scores.map((score: any) => (
               <div key={score.id} className="p-4 rounded-xl border border-border flex items-center justify-between">
                 {editingScoreId === score.id ? (
-                  <div className="flex items-center gap-3 w-full">
-                    <input type="number" min={1} max={45} className="input max-w-[100px]" value={scoreForm.score_value} onChange={e => setScoreForm({...scoreForm, score_value: +e.target.value})} />
-                    <input type="date" className="input flex-1" value={scoreForm.score_date} onChange={e => setScoreForm({...scoreForm, score_date: e.target.value})} />
-                    <button onClick={() => updateScoreMut.mutate({ id: score.id, data: scoreForm })} className="btn-primary btn-sm ml-auto">Save</button>
-                    <button onClick={() => setEditingScoreId(null)} className="btn-ghost btn-sm">Cancel</button>
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full">
+                    <input type="number" min={1} max={45} className="input sm:max-w-[100px] w-full" value={scoreForm.score_value} onChange={e => setScoreForm({...scoreForm, score_value: +e.target.value})} />
+                    <input type="date" className="input w-full sm:flex-1" value={scoreForm.score_date} onChange={e => setScoreForm({...scoreForm, score_date: e.target.value})} />
+                    <div className="flex gap-2 w-full sm:w-auto mt-2 sm:mt-0 sm:ml-auto">
+                      <button onClick={() => updateScoreMut.mutate({ id: score.id, data: scoreForm })} className="btn-primary btn-sm flex-1 sm:flex-none">Save</button>
+                      <button onClick={() => setEditingScoreId(null)} className="btn-ghost btn-sm flex-1 sm:flex-none">Cancel</button>
+                    </div>
                   </div>
                 ) : (
                   <>

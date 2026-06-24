@@ -180,30 +180,32 @@ export default function Scores() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.05 }}
-              className="card flex items-center gap-4 hover:shadow-elevated transition-all duration-200"
+              className="card flex flex-col sm:flex-row items-start sm:items-center gap-4 hover:shadow-elevated transition-all duration-200"
             >
-              <div className="w-14 h-14 rounded-2xl bg-brand/10 flex items-center justify-center flex-shrink-0">
-                <span className="text-xl font-black text-brand">{score.score_value}</span>
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="font-bold text-ink text-lg">{score.score_value} points</span>
-                  {i === 0 && <span className="badge badge-success">Latest</span>}
-                  {i === scores.length - 1 && scores.length === 5 && (
-                    <span className="badge badge-warning">Oldest</span>
-                  )}
+              <div className="flex items-center gap-4 w-full sm:w-auto">
+                <div className="w-14 h-14 rounded-2xl bg-brand/10 flex items-center justify-center flex-shrink-0">
+                  <span className="text-xl font-black text-brand">{score.score_value}</span>
                 </div>
-                <span className="text-sm text-ink-muted">Played on {formatDate(score.score_date)}</span>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 flex-wrap mb-1">
+                    <span className="font-bold text-ink text-lg">{score.score_value} points</span>
+                    {i === 0 && <span className="badge badge-success">Latest</span>}
+                    {i === scores.length - 1 && scores.length === 5 && (
+                      <span className="badge badge-warning">Oldest</span>
+                    )}
+                  </div>
+                  <span className="text-sm text-ink-muted">Played on {formatDate(score.score_date)}</span>
+                </div>
               </div>
 
               {/* Draw ball preview */}
-              <div className="hidden sm:flex items-center gap-2">
+              <div className="hidden sm:flex items-center gap-2 sm:ml-auto">
                 <span className="text-xs text-ink-muted">Draw #</span>
                 <div className="draw-ball-gold w-10 h-10 text-sm">{score.score_value}</div>
               </div>
 
               {/* Actions */}
-              <div className="flex gap-2 flex-shrink-0">
+              <div className="flex gap-2 flex-shrink-0 w-full sm:w-auto justify-end mt-2 sm:mt-0 pt-3 sm:pt-0 border-t border-border sm:border-t-0">
                 <button
                   onClick={() => startEdit(score)}
                   className="p-2 rounded-xl text-ink-muted hover:text-[#2563EB] hover:bg-blue-50 transition-colors"
