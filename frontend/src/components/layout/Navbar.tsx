@@ -43,12 +43,17 @@ export default function Navbar() {
             </span>
           </Link>
 
-          {/* Desktop Nav */}
           <div className="hidden md:flex items-center gap-6">
             {navLinks.map(link => (
               <Link
                 key={link.href}
                 to={link.href}
+                onClick={() => {
+                  if (link.href.startsWith('/#') && location.pathname === '/') {
+                    const id = link.href.replace('/#', '');
+                    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+                  }
+                }}
                 className={`nav-link ${location.pathname === link.href ? 'nav-link-active' : ''}`}
               >
                 {link.label}
@@ -119,7 +124,18 @@ export default function Navbar() {
           >
             <div className="container-app py-4 flex flex-col gap-2">
               {navLinks.map(link => (
-                <Link key={link.href} to={link.href} className="py-2 text-sm font-medium text-ink-muted hover:text-ink">
+                <Link 
+                  key={link.href} 
+                  to={link.href} 
+                  onClick={() => {
+                    setIsOpen(false);
+                    if (link.href.startsWith('/#') && location.pathname === '/') {
+                      const id = link.href.replace('/#', '');
+                      setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' }), 50);
+                    }
+                  }}
+                  className="py-2 text-sm font-medium text-ink-muted hover:text-ink"
+                >
                   {link.label}
                 </Link>
               ))}

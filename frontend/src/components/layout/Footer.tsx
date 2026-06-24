@@ -53,7 +53,20 @@ export default function Footer() {
             <h4 className="font-semibold text-sm mb-4 text-white/80 uppercase tracking-wider">Platform</h4>
             <ul className="space-y-3 text-sm text-white/60">
               {[['How It Works', '/#how-it-works'], ['Charities', '/charities'], ['Pricing', '/#pricing'], ['Sign Up', '/register']].map(([label, href]) => (
-                <li key={href}><Link to={href} className="hover:text-white transition-colors">{label}</Link></li>
+                <li key={href}>
+                  <Link 
+                    to={href} 
+                    onClick={() => {
+                      if (href.startsWith('/#') && window.location.pathname === '/') {
+                        const id = href.replace('/#', '');
+                        setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' }), 50);
+                      }
+                    }}
+                    className="hover:text-white transition-colors"
+                  >
+                    {label}
+                  </Link>
+                </li>
               ))}
             </ul>
           </div>

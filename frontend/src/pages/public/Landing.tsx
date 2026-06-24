@@ -3,7 +3,7 @@ import { useRef, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Trophy, Heart, ArrowRight, CheckCircle, Star,
-  Users, TrendingUp, Award, ArrowDown, ChevronRight, Sparkles
+  Users, TrendingUp, Award, ArrowDown, ChevronRight, Sparkles, Target
 } from 'lucide-react';
 
 // ── Animated Counter ──────────────────────────────────────────────
@@ -69,6 +69,15 @@ export default function Landing() {
     { num: '03', icon: Heart, title: 'Support Charity', desc: 'Select a charity to receive your contribution — minimum 10%, you choose how much.', color: 'text-brand' },
     { num: '04', icon: Award, title: 'Win Rewards', desc: 'Monthly draws with 3-match, 4-match and 5-match jackpots. Real prizes, real impact.', color: 'text-gold' },
   ];
+
+  useEffect(() => {
+    if (window.location.hash) {
+      const id = window.location.hash.replace('#', '');
+      setTimeout(() => {
+        document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+    }
+  }, []);
 
   const stats = [
     { value: 127300, prefix: '£', suffix: '+', label: 'Raised for Charity' },
@@ -424,11 +433,3 @@ export default function Landing() {
   );
 }
 
-// Missing import fix
-function Target({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-      <circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" />
-    </svg>
-  );
-}
