@@ -79,8 +79,7 @@ This README documents the complete architecture, engineering decisions, data mod
 
 | Role | Email | Password |
 |------|-------|----------|
-| **Admin** | `admin@golfforgood.com` | `Admin@123` |
-| **Subscriber** | `user@golfforgood.com` | `User@123` |
+| **Admin** | `admin@golfforgood.com` | `Admin@GolfForGood2026` |
 
 > ⚠️ **Note:** These are demo credentials for a test-mode environment. Stripe payments use test card `4242 4242 4242 4242`. No real charges are ever made.
 
