@@ -11,34 +11,50 @@ export default function AuthCallback() {
   const { setAuth } = useAuthStore();
 
   useEffect(() => {
-    const processOAuth = async () => {
-      try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        if (error) throw error;
-        if (!session) {
-          throw new Error('No Google authentication session found. Please try again.');
-        }
+    let handled = false;
 
-        const res = await authApi.loginWithGoogle(session.access_token);
-        if (res.success && res.data) {
-          setAuth(res.data.user, res.data.token);
-          
-          // Sign out of Supabase to prevent duplicate local session management
-          await supabase.auth.signOut();
-          
-          toast.success(`Welcome back, ${res.data.user.full_name.split(' ')[0]}!`);
-          navigate(res.data.user.role === 'admin' ? '/admin' : '/dashboard');
-        } else {
-          throw new Error('Verification failed. Could not log in with Google.');
-        }
-      } catch (err: any) {
-        console.error('OAuth processing error:', err);
-        toast.error(err.message || 'Google Authentication failed.');
+    // Safety net: if Supabase never fires, redirect back to login after 10s
+    const timeout = setTimeout(() => {
+      if (!handled) {
+        handled = true;
+        toast.error('Google sign-in timed out. Please try again.');
         navigate('/login');
       }
-    };
+    }, 10000);
 
-    processOAuth();
+    // onAuthStateChange fires the SIGNED_IN event exactly once the
+    // OAuth token exchange from the URL hash is complete — no race condition.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (event !== 'SIGNED_IN' || !session || handled) return;
+        handled = true;
+        clearTimeout(timeout);
+
+        try {
+          const res = await authApi.loginWithGoogle(session.access_token);
+          if (res.success && res.data) {
+            setAuth(res.data.user, res.data.token);
+
+            // Sign out of Supabase to prevent duplicate local session management
+            await supabase.auth.signOut();
+
+            toast.success(`Welcome, ${res.data.user.full_name.split(' ')[0]}!`);
+            navigate(res.data.user.role === 'admin' ? '/admin' : '/dashboard');
+          } else {
+            throw new Error('Verification failed. Could not log in with Google.');
+          }
+        } catch (err: any) {
+          console.error('OAuth processing error:', err);
+          toast.error(err.response?.data?.message || err.message || 'Google Authentication failed.');
+          navigate('/login');
+        }
+      }
+    );
+
+    return () => {
+      clearTimeout(timeout);
+      subscription.unsubscribe();
+    };
   }, [navigate, setAuth]);
 
   return (
