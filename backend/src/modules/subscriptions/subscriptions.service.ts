@@ -6,9 +6,20 @@ export class SubscriptionsService {
   async getPlans() {
     const { data } = await supabase
       .from('subscription_plans')
-      .select('id, name, plan_type, price_amount, currency, duration_days')
-      .eq('is_active', true);
-    return data ?? [];
+      .select('id, name, plan_type, price_amount, currency, duration_days, features')
+      .eq('is_active', true)
+      .order('plan_type', { ascending: true })
+      .order('created_at', { ascending: true });
+
+    if (!data) return [];
+
+    // Deduplicate: keep only the first active plan per plan_type
+    const seen = new Set<string>();
+    return data.filter(plan => {
+      if (seen.has(plan.plan_type)) return false;
+      seen.add(plan.plan_type);
+      return true;
+    });
   }
 
   async getMySubscription(userId: string) {
