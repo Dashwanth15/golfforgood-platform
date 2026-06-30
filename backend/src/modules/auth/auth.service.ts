@@ -1,7 +1,14 @@
 import bcrypt from 'bcryptjs';
+import { createRemoteJWKSet, jwtVerify } from 'jose';
 import { supabase } from '../../config/database';
 import { signToken } from '../../shared/utils/jwt';
 import { ConflictError, NotFoundError, UnauthorizedError } from '../../shared/errors/AppError';
+
+// Supabase JWKS endpoint — fetched once and cached in memory.
+// Verifies ES256 tokens locally with zero network round-trips per request.
+const SUPABASE_JWKS = createRemoteJWKSet(
+  new URL(`${process.env.SUPABASE_URL}/auth/v1/.well-known/jwks.json`)
+);
 
 export class AuthService {
   async register(full_name: string, email: string, password: string) {
@@ -51,21 +58,29 @@ export class AuthService {
   }
 
   async loginWithGoogle(accessToken: string) {
-    // Validate the Supabase OAuth token using the official method.
-    // The service role client verifies the token against Supabase Auth.
-    const { data: { user: sbUser }, error: authError } = await supabase.auth.getUser(accessToken);
-    if (authError || !sbUser) {
-      console.error('Supabase Google OAuth validation error:', authError);
-      throw new UnauthorizedError('Invalid Google session token');
+    // Verify the Supabase access token locally using ES256 + cached JWKS.
+    // No network round-trip per request — the JWKS is fetched once and cached.
+    let email: string;
+    let full_name: string;
+    let avatar_url: string | null;
+
+    try {
+      const { payload } = await jwtVerify(accessToken, SUPABASE_JWKS, {
+        algorithms: ['ES256'],
+      });
+
+      email = (payload.email as string)?.toLowerCase().trim();
+      const meta = (payload.user_metadata ?? {}) as any;
+      full_name = meta.full_name || meta.name || 'Google User';
+      avatar_url = meta.avatar_url || meta.picture || null;
+    } catch (err: any) {
+      console.error('Supabase JWT verification error:', err.message);
+      throw new UnauthorizedError('Invalid or expired Google session token');
     }
 
-    const email = sbUser.email?.toLowerCase().trim();
     if (!email) {
       throw new UnauthorizedError('Email not associated with this Google account');
     }
-
-    const full_name = sbUser.user_metadata?.full_name || sbUser.user_metadata?.name || 'Google User';
-    const avatar_url = sbUser.user_metadata?.avatar_url || sbUser.user_metadata?.picture || null;
 
     const { data: users, error: selectError } = await supabase
       .from('users')
