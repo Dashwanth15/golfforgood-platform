@@ -13,41 +13,56 @@ export default function AuthCallback() {
   useEffect(() => {
     let handled = false;
 
-    // Safety net: if Supabase never fires, redirect back to login after 10s
+    const processSession = async (accessToken: string) => {
+      if (handled) return;
+      handled = true;
+
+      try {
+        const res = await authApi.loginWithGoogle(accessToken);
+        if (res.success && res.data) {
+          setAuth(res.data.user, res.data.token);
+
+          // Sign out of Supabase to prevent duplicate local session management
+          await supabase.auth.signOut();
+
+          toast.success(`Welcome, ${res.data.user.full_name.split(' ')[0]}!`);
+          navigate(res.data.user.role === 'admin' ? '/admin' : '/dashboard');
+        } else {
+          throw new Error('Verification failed. Could not log in with Google.');
+        }
+      } catch (err: any) {
+        console.error('OAuth processing error:', err);
+        toast.error(err.response?.data?.message || err.message || 'Google Authentication failed.');
+        navigate('/login');
+      }
+    };
+
+    // Safety net: redirect back to login after 25s
     const timeout = setTimeout(() => {
       if (!handled) {
         handled = true;
         toast.error('Google sign-in timed out. Please try again.');
         navigate('/login');
       }
-    }, 10000);
+    }, 25000);
 
-    // onAuthStateChange fires the SIGNED_IN event exactly once the
-    // OAuth token exchange from the URL hash is complete — no race condition.
+    // 1️⃣ Check immediately if Supabase already has a session
+    //    (happens when the page loads after OAuth redirect and Supabase
+    //     processes the URL hash before our listener is attached)
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.access_token && !handled) {
+        clearTimeout(timeout);
+        processSession(session.access_token);
+      }
+    });
+
+    // 2️⃣ Also listen for onAuthStateChange in case getSession() returns null
+    //    but the SIGNED_IN event fires shortly after (race condition safeguard)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (event !== 'SIGNED_IN' || !session || handled) return;
-        handled = true;
         clearTimeout(timeout);
-
-        try {
-          const res = await authApi.loginWithGoogle(session.access_token);
-          if (res.success && res.data) {
-            setAuth(res.data.user, res.data.token);
-
-            // Sign out of Supabase to prevent duplicate local session management
-            await supabase.auth.signOut();
-
-            toast.success(`Welcome, ${res.data.user.full_name.split(' ')[0]}!`);
-            navigate(res.data.user.role === 'admin' ? '/admin' : '/dashboard');
-          } else {
-            throw new Error('Verification failed. Could not log in with Google.');
-          }
-        } catch (err: any) {
-          console.error('OAuth processing error:', err);
-          toast.error(err.response?.data?.message || err.message || 'Google Authentication failed.');
-          navigate('/login');
-        }
+        processSession(session.access_token);
       }
     );
 

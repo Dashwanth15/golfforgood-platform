@@ -51,19 +51,48 @@ export class AuthService {
   }
 
   async loginWithGoogle(accessToken: string) {
-    const { data: { user: sbUser }, error: authError } = await supabase.auth.getUser(accessToken);
-    if (authError || !sbUser) {
-      console.error('Supabase Google OAuth validation error:', authError);
-      throw new UnauthorizedError('Invalid Google session token');
+    // Decode the Supabase JWT locally to avoid a network round-trip to Supabase Auth API.
+    // Supabase JWTs are signed with the SUPABASE_JWT_SECRET (different from service role key).
+    // We use jsonwebtoken to verify locally — much faster and no network timeout risk.
+    let email: string;
+    let full_name: string;
+    let avatar_url: string | null;
+
+    try {
+      const jwt = await import('jsonwebtoken');
+      // Supabase JWT secret is NOT the service role key.
+      // It's found in Supabase Dashboard → Settings → API → JWT Secret.
+      // We store it as SUPABASE_JWT_SECRET in .env.
+      const jwtSecret = process.env.SUPABASE_JWT_SECRET;
+
+      if (jwtSecret) {
+        // Fast path: verify and decode locally
+        const decoded = jwt.default.verify(accessToken, jwtSecret) as any;
+        email = (decoded.email as string)?.toLowerCase().trim();
+        full_name = decoded.user_metadata?.full_name || decoded.user_metadata?.name || 'Google User';
+        avatar_url = decoded.user_metadata?.avatar_url || decoded.user_metadata?.picture || null;
+      } else {
+        // Fallback: network call to Supabase (slower, may timeout)
+        console.warn('SUPABASE_JWT_SECRET not set — falling back to supabase.auth.getUser() network call');
+        const { data: { user: sbUser }, error: authError } = await supabase.auth.getUser(accessToken);
+        if (authError || !sbUser) {
+          console.error('Supabase Google OAuth validation error:', authError);
+          throw new UnauthorizedError('Invalid Google session token');
+        }
+        email = sbUser.email?.toLowerCase().trim() ?? '';
+        full_name = sbUser.user_metadata?.full_name || sbUser.user_metadata?.name || 'Google User';
+        avatar_url = sbUser.user_metadata?.avatar_url || sbUser.user_metadata?.picture || null;
+      }
+    } catch (err: any) {
+      if (err.name === 'JsonWebTokenError' || err.name === 'TokenExpiredError') {
+        throw new UnauthorizedError('Invalid or expired Google session token');
+      }
+      throw err;
     }
 
-    const email = sbUser.email?.toLowerCase().trim();
     if (!email) {
       throw new UnauthorizedError('Email not associated with this Google account');
     }
-
-    const full_name = sbUser.user_metadata?.full_name || sbUser.user_metadata?.name || 'Google User';
-    const avatar_url = sbUser.user_metadata?.avatar_url || sbUser.user_metadata?.picture || null;
 
     const { data: users, error: selectError } = await supabase
       .from('users')
